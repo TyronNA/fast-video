@@ -8,10 +8,11 @@ import { initModels } from './models.js';
 import { initPriceEstimate, handleSubmit } from './form.js';
 import { renderHistory } from './history.js';
 import { renderSettings, loadSettings, applyTheme } from './settings.js';
+import { initBatch } from './batch.js';
 
 // ── Navigation ─────────────────────────────────────────────────────────────
 
-const VIEWS = ['generate', 'history', 'settings'];
+const VIEWS = ['generate', 'history', 'settings', 'batch'];
 
 function switchView(target) {
   VIEWS.forEach(v => {
@@ -27,6 +28,14 @@ function switchView(target) {
     btn.classList.toggle('text-brand', active);
     btn.classList.toggle('text-gray-400', !active);
   });
+
+  // Toggle right-panel between preview and batch queue
+  const isBatch = target === 'batch';
+  document.getElementById('normalPreviewPanel')?.classList.toggle('hidden', isBatch);
+  document.getElementById('normalPreviewPanel')?.classList.toggle('flex', !isBatch);
+  document.getElementById('batchQueuePanel')?.classList.toggle('hidden', !isBatch);
+  document.getElementById('batchQueuePanel')?.classList.toggle('flex', isBatch);
+
   if (target === 'history') loadHistoryView();
   if (target === 'settings') renderSettings();
 }
@@ -102,6 +111,7 @@ async function boot() {
       `<span class="w-2 h-2 rounded-full bg-green-500 inline-block"></span> ${current_location}`;
     initModels(models, default_model);
     initPriceEstimate();
+    initBatch(models);
   } catch (err) {
     badge.innerHTML =
       `<span class="w-2 h-2 rounded-full bg-red-500 inline-block"></span> error`;
@@ -111,6 +121,11 @@ async function boot() {
 
   // Form
   document.getElementById('genForm').addEventListener('submit', handleSubmit);
+
+  // Gen log clear button
+  document.getElementById('genLogClear')?.addEventListener('click', () => {
+    document.getElementById('genLogBody').innerHTML = '';
+  });
 
   // Aspect ratio changes update draft box live
   document.querySelectorAll('input[name="aspectRatio"]').forEach(r => {

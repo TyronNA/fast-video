@@ -5,6 +5,20 @@
 import { fetchEstimate, submitGeneration, saveHistoryEntry } from './api.js';
 import { recordHistory } from './history.js';
 
+// ── Generate Log ──────────────────────────────────────────────────────────────
+
+export function genLog(type, msg) {
+  const body = document.getElementById('genLogBody');
+  if (!body) return;
+  const now = new Date().toTimeString().slice(0, 8);
+  const color = { ok: 'text-emerald-400', warn: 'text-yellow-400', err: 'text-red-400', info: 'text-gray-400' }[type] ?? 'text-gray-400';
+  const line = document.createElement('div');
+  line.className = 'flex gap-3 leading-relaxed';
+  line.innerHTML = `<span class="font-mono text-[11px] text-gray-600 flex-shrink-0">${now}</span><span class="font-mono text-[11px] ${color}">${msg.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>`;
+  body.appendChild(line);
+  body.scrollTop = body.scrollHeight;
+}
+
 // ── Price estimate ────────────────────────────────────────────────────────────
 
 /** Wire all inputs that affect cost to refresh the estimate live. */
@@ -81,6 +95,7 @@ export async function handleSubmit(e) {
   setGenerating(true);
   hideAll();
   document.getElementById('progressBox').classList.remove('hidden');
+  genLog('info', `Generating — ${task} · ${model} · ${duration}s · ${aspectRatio}${sampleCount > 1 ? ` · x${sampleCount}` : ''}${generateAudio ? ' · audio' : ''}`);
 
   const payload = {
     task,
@@ -104,14 +119,16 @@ export async function handleSubmit(e) {
   try {
     const { ok, data } = await submitGeneration(payload);
     document.getElementById('progressBox').classList.add('hidden');
-    if (!ok) { showError(data.detail ?? JSON.stringify(data)); return; }
+    if (!ok) { showError(data.detail ?? JSON.stringify(data)); genLog('err', data.detail ?? `HTTP error`); return; }
     // Record to history (localStorage + SQLite backend)
     const filename = data.file_path.split('/').pop();
     recordHistory(filename, { prompt, model, task, duration, aspectRatio });
     saveHistoryEntry({ filename, prompt, model, task, duration, aspect_ratio: aspectRatio }).catch(() => {});
+    genLog('ok', `Done → ${filename}`);
     showVideo(data, { model, duration, aspectRatio, task });
   } catch (err) {
     document.getElementById('progressBox').classList.add('hidden');
+    genLog('err', `Error: ${err.message}`);
     showError(err.message);
   } finally {
     setGenerating(false);

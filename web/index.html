@@ -43,6 +43,13 @@
       </svg>
       Settings
     </button>
+    <button type="button" data-view="batch"
+      class="nav-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-400 hover:bg-gray-800 hover:text-gray-200 text-sm transition">
+      <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+      </svg>
+      Batch
+    </button>
   </div>
   <div class="px-4 py-3 border-t border-gray-800">
     <div id="locationBadge" class="flex items-center gap-1.5 text-xs text-gray-400">
@@ -230,10 +237,141 @@
     </div>
   </div><!-- /view-settings -->
 
+  <!-- VIEW: Batch -->
+  <div id="view-batch" class="hidden flex-col flex-1 overflow-y-auto">
+    <div class="px-5 py-5 space-y-4">
+
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <label class="text-xs font-medium text-gray-400">Prompts <span class="text-gray-600">— one per line</span></label>
+          <span class="font-mono text-xs text-gray-500"><span id="batchPromptCount">0</span> prompts</span>
+        </div>
+        <textarea id="batchPromptsInput" rows="9" maxlength="100000"
+          placeholder="A cinematic shot of a robot dancing&#10;A time-lapse of a city at night&#10;A dragon flying over mountains..."
+          class="w-full rounded-lg bg-gray-800 border border-gray-700 focus:border-brand focus:ring-1 focus:ring-brand px-3 py-2 text-sm text-gray-100 placeholder-gray-500 resize-none outline-none transition font-mono"></textarea>
+      </div>
+
+      <button id="batchParseBtn"
+        class="w-full py-2 rounded-lg border border-gray-700 bg-gray-800 hover:border-brand hover:text-brand text-gray-300 text-xs font-medium font-mono transition">
+        ⊞ Parse Prompts
+      </button>
+
+      <hr class="border-gray-800" />
+
+      <div>
+        <label class="block text-xs font-medium text-gray-400 mb-1">Model</label>
+        <select id="batchModel" class="w-full rounded-lg bg-gray-800 border border-gray-700 focus:border-brand focus:ring-1 focus:ring-brand px-3 py-2 text-sm text-gray-100 outline-none transition">
+          <option value="" disabled selected>Loading…</option>
+        </select>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-medium text-gray-400 mb-1.5">Ratio</label>
+          <div class="flex gap-1.5">
+            <label class="flex-1"><input type="radio" name="batchAspectRatio" value="16:9" checked class="sr-only peer" /><span class="block text-center text-xs py-1.5 rounded-lg border border-gray-700 peer-checked:border-brand peer-checked:bg-brand/10 cursor-pointer transition">16:9</span></label>
+            <label class="flex-1"><input type="radio" name="batchAspectRatio" value="9:16" class="sr-only peer" /><span class="block text-center text-xs py-1.5 rounded-lg border border-gray-700 peer-checked:border-brand peer-checked:bg-brand/10 cursor-pointer transition">9:16</span></label>
+            <label class="flex-1"><input type="radio" name="batchAspectRatio" value="1:1" class="sr-only peer" /><span class="block text-center text-xs py-1.5 rounded-lg border border-gray-700 peer-checked:border-brand peer-checked:bg-brand/10 cursor-pointer transition">1:1</span></label>
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-400 mb-1.5">Resolution</label>
+          <div class="flex gap-1.5">
+            <label class="flex-1"><input type="radio" name="batchResolution" value="720p" checked class="sr-only peer" /><span class="block text-center text-xs py-1.5 rounded-lg border border-gray-700 peer-checked:border-brand peer-checked:bg-brand/10 cursor-pointer transition">720p</span></label>
+            <label class="flex-1"><input type="radio" name="batchResolution" value="1080p" class="sr-only peer" /><span class="block text-center text-xs py-1.5 rounded-lg border border-gray-700 peer-checked:border-brand peer-checked:bg-brand/10 cursor-pointer transition">1080p</span></label>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-400 mb-1.5">Length</label>
+        <div class="flex gap-1.5">
+          <label class="flex-1"><input type="radio" name="batchDurationRadio" value="4" class="sr-only peer" /><span class="block text-center text-xs py-1.5 rounded-lg border border-gray-700 peer-checked:border-brand peer-checked:bg-brand/10 cursor-pointer transition">4s</span></label>
+          <label class="flex-1"><input type="radio" name="batchDurationRadio" value="6" checked class="sr-only peer" /><span class="block text-center text-xs py-1.5 rounded-lg border border-gray-700 peer-checked:border-brand peer-checked:bg-brand/10 cursor-pointer transition">6s</span></label>
+          <label class="flex-1"><input type="radio" name="batchDurationRadio" value="8" class="sr-only peer" /><span class="block text-center text-xs py-1.5 rounded-lg border border-gray-700 peer-checked:border-brand peer-checked:bg-brand/10 cursor-pointer transition">8s</span></label>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-between rounded-lg border border-gray-700 bg-gray-800/40 px-3 py-2.5">
+        <div>
+          <span class="text-sm font-medium text-gray-300">Generate audio</span>
+          <p class="text-xs text-gray-500 mt-0.5">Veo 3.0+ only.</p>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer ml-3 flex-shrink-0">
+          <input type="checkbox" id="batchGenerateAudio" class="sr-only peer" />
+          <div class="w-10 h-5 bg-gray-700 rounded-full peer peer-checked:after:translate-x-full after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand transition"></div>
+        </label>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-400 mb-1.5">Results &mdash; <span id="batchSampleVal">1</span></label>
+        <input type="range" id="batchSampleCount" min="1" max="4" value="1" class="w-full" />
+      </div>
+
+      <details class="group rounded-lg border border-gray-700 bg-gray-800/40">
+        <summary class="flex items-center justify-between px-4 py-2.5 cursor-pointer select-none text-xs font-medium text-gray-400 hover:text-white list-none">
+          Advanced
+          <svg class="w-3.5 h-3.5 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+          </svg>
+        </summary>
+        <div class="px-4 pb-4 pt-3 space-y-3 border-t border-gray-700/60">
+          <div>
+            <label class="block text-xs font-medium text-gray-400 mb-1">Negative Prompt <span class="text-gray-600">(optional)</span></label>
+            <textarea id="batchNegPrompt" rows="2" placeholder="blurry, low quality, watermark..."
+              class="w-full rounded-md bg-gray-800 border border-gray-700 focus:border-brand focus:ring-1 focus:ring-brand px-3 py-1.5 text-sm text-gray-100 placeholder-gray-600 resize-none outline-none transition"></textarea>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-400 mb-1">Seed <span class="text-gray-600">(optional)</span></label>
+            <input type="number" id="batchSeed" min="0" placeholder="e.g. 42"
+              class="w-full rounded-md bg-gray-800 border border-gray-700 focus:border-brand focus:ring-1 focus:ring-brand px-3 py-1.5 text-sm text-gray-100 placeholder-gray-600 outline-none transition" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-400 mb-1">Output GCS URI <span class="text-gray-600">(optional)</span></label>
+            <input type="text" id="batchStorageUri" placeholder="gs://bucket/output/"
+              class="w-full rounded-md bg-gray-800 border border-gray-700 focus:border-brand focus:ring-1 focus:ring-brand px-3 py-1.5 text-sm text-gray-100 placeholder-gray-600 outline-none transition" />
+          </div>
+        </div>
+      </details>
+
+      <hr class="border-gray-800" />
+
+      <div>
+        <div class="flex items-center justify-between mb-1.5">
+          <label class="text-xs font-medium text-gray-400">Delay between jobs</label>
+          <span class="font-mono text-xs text-emerald-400" id="batchDelayVal">60s</span>
+        </div>
+        <input type="range" id="batchDelaySlider" min="0" max="120" value="60" class="w-full" />
+        <p class="text-xs text-gray-600 mt-1">Recommended ≥ 60s to avoid rate limits.</p>
+      </div>
+
+      <div class="space-y-2 pt-1">
+        <button id="batchStartBtn" disabled
+          class="w-full py-2.5 rounded-lg bg-brand hover:bg-brand-dark active:scale-[.98] font-semibold text-sm transition disabled:opacity-40 disabled:cursor-not-allowed">
+          ▶ Start Queue
+        </button>
+        <div class="flex gap-2">
+          <button id="batchPauseBtn" disabled
+            class="flex-1 py-2 rounded-lg border border-gray-700 bg-transparent hover:border-gray-500 text-gray-300 text-sm font-medium transition disabled:opacity-40 disabled:cursor-not-allowed">
+            ⏸ Pause
+          </button>
+          <button id="batchStopBtn" disabled
+            class="flex-1 py-2 rounded-lg border border-transparent bg-red-900/30 hover:border-red-500/50 text-red-400 text-sm font-medium transition disabled:opacity-40 disabled:cursor-not-allowed">
+            ■ Stop
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /view-batch -->
+
 </div><!-- /center panel -->
 
 <!-- RIGHT COLUMN: header / center(draft) / bottom -->
 <div class="flex-1 flex flex-col overflow-hidden bg-gray-950 min-w-0">
+
+<!-- Normal preview (generate / history / settings) -->
+<div id="normalPreviewPanel" class="flex flex-col flex-1 overflow-hidden">
 
   <!-- Header -->
   <div class="flex-shrink-0 flex items-center justify-between px-6 py-3 border-b border-gray-800 bg-gray-900/40">
@@ -283,10 +421,56 @@
     </div>
   </div><!-- /center -->
 
-  <!-- Bottom bar -->
-  <div class="flex-shrink-0 px-6 py-3 border-t border-gray-800 bg-gray-900/40 flex items-center gap-4">
-    <span id="resultMeta" class="flex-1 text-xs text-gray-500 truncate">Ready</span>
+  <!-- Log panel -->
+  <div class="flex-shrink-0 border-t border-gray-800" style="height:148px;display:flex;flex-direction:column">
+    <div class="flex items-center px-5 py-1.5 border-b border-gray-800 bg-gray-900/40">
+      <span class="font-mono text-[10px] tracking-widest text-gray-500 uppercase">// Log</span>
+      <span id="resultMeta" class="ml-3 text-xs text-gray-500 truncate flex-1">Ready</span>
+      <button id="genLogClear" class="font-mono text-[10px] text-gray-600 hover:text-gray-300 transition px-1">clear</button>
+    </div>
+    <div id="genLogBody" class="flex-1 overflow-y-auto px-5 py-2 space-y-0.5"></div>
   </div>
+
+</div><!-- /normalPreviewPanel -->
+
+<!-- Batch queue panel -->
+<div id="batchQueuePanel" class="hidden flex-col flex-1 overflow-hidden">
+
+  <!-- Queue header -->
+  <div class="flex-shrink-0 flex items-center gap-3 px-5 py-3 border-b border-gray-800 bg-gray-900/40">
+    <span class="font-mono text-[10px] tracking-widest text-gray-500 uppercase">// Queue</span>
+    <div class="ml-auto flex items-center gap-3">
+      <span class="font-mono text-[11px] bg-gray-800 text-gray-400 px-2 py-0.5 rounded">Total <b id="bStatTotal" class="text-gray-200 font-medium">0</b></span>
+      <span class="font-mono text-[11px] flex items-center gap-1.5 bg-emerald-900/30 text-emerald-400 px-2 py-0.5 rounded">
+        <span id="bRunDot" class="w-1.5 h-1.5 rounded-full bg-emerald-400 opacity-0"></span>
+        Run <b id="bStatRun" class="font-medium">0</b>
+      </span>
+      <span class="font-mono text-[11px] bg-blue-900/30 text-blue-400 px-2 py-0.5 rounded">Done <b id="bStatDone" class="font-medium">0</b></span>
+      <span class="font-mono text-[11px] bg-gray-800 text-gray-400 px-2 py-0.5 rounded">Wait <b id="bStatWait" class="font-medium">0</b></span>
+      <span class="font-mono text-[11px] bg-red-900/30 text-red-400 px-2 py-0.5 rounded">Err <b id="bStatErr" class="font-medium">0</b></span>
+    </div>
+  </div>
+
+  <!-- Job list -->
+  <div id="batchJobList" class="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+    <div id="batchEmpty" class="flex flex-col items-center justify-center py-16 text-gray-600">
+      <svg class="w-10 h-10 mb-3 opacity-20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h10"/>
+      </svg>
+      <p class="font-mono text-xs">No jobs yet — parse prompts to begin</p>
+    </div>
+  </div>
+
+  <!-- Log -->
+  <div class="flex-shrink-0 border-t border-gray-800" style="height:140px;display:flex;flex-direction:column">
+    <div class="flex items-center px-4 py-1.5 border-b border-gray-800">
+      <span class="font-mono text-[10px] tracking-widest text-gray-600 uppercase">// Log</span>
+      <button id="batchLogClear" class="ml-auto font-mono text-[10px] text-gray-600 hover:text-gray-300 transition px-1">clear</button>
+    </div>
+    <div id="batchLogBody" class="flex-1 overflow-y-auto px-4 py-2 space-y-0.5"></div>
+  </div>
+
+</div><!-- /batchQueuePanel -->
 
 </div><!-- /right column -->
 </div><!-- /shell -->

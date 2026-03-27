@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Veo 3.1 Batch Queue</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --surface2: #1a1a1a;
+    --border: #2a2a2a;
+    --accent: #00ff88;
+    --accent-dim: rgba(0,255,136,0.12);
+    --accent-mid: rgba(0,255,136,0.4);
+    --warn: #ffaa00;
+    --warn-dim: rgba(255,170,0,0.12);
+    --danger: #ff4455;
+    --danger-dim: rgba(255,68,85,0.12);
+    --text: #e8e8e8;
+    --text2: #888;
+    --text3: #555;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    min-height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr;
+  }
+
+  /* HEADER */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--surface);
+  }
+  .logo {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+  }
+  .logo span { color: var(--text3); }
+  .header-stats {
+    margin-left: auto;
+    display: flex;
+    gap: 24px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text2);
+  }
+  .header-stats b { color: var(--text); font-weight: 500; }
+
+  /* MAIN LAYOUT */
+  main {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    height: calc(100vh - 53px);
+    overflow: hidden;
+  }
+
+  /* LEFT PANEL — CONFIG */
+  .config-panel {
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .panel-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--text3);
+    text-transform: uppercase;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .config-body {
+    padding: 16px;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  label {
+    display: block;
+    font-size: 11px;
+    color: var(--text2);
+    font-family: var(--mono);
+    margin-bottom: 5px;
+    letter-spacing: 0.05em;
+  }
+
+  input[type="text"], input[type="number"], input[type="password"], select, textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    padding: 8px 10px;
+    border-radius: 4px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent-mid);
+  }
+  textarea {
+    resize: vertical;
+    min-height: 80px;
+    line-height: 1.5;
+  }
+
+  .field { display: flex; flex-direction: column; }
+
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 4px 0;
+  }
+
+  .btn {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 9px 16px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.05em;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
+    width: 100%;
+  }
+  .btn-primary:hover { background: #00e67a; }
+  .btn-primary:disabled { background: var(--text3); cursor: not-allowed; color: #666; }
+  .btn-ghost {
+    background: transparent;
+    color: var(--text2);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { border-color: var(--text2); color: var(--text); }
+  .btn-danger {
+    background: var(--danger-dim);
+    color: var(--danger);
+    border: 1px solid transparent;
+  }
+  .btn-danger:hover { border-color: var(--danger); }
+
+  .btn-row { display: flex; gap: 8px; }
+
+  /* PROMPTS TEXTAREA */
+  #promptsInput {
+    min-height: 180px;
+    font-size: 11px;
+    line-height: 1.6;
+  }
+
+  .hint {
+    font-size: 11px;
+    color: var(--text3);
+    font-family: var(--mono);
+    line-height: 1.6;
+  }
+  .hint b { color: var(--text2); }
+
+  /* DELAY SLIDER */
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  input[type="range"] {
+    flex: 1;
+    accent-color: var(--accent);
+    background: transparent;
+    border: none;
+    padding: 0;
+  }
+  .slider-val {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+    min-width: 36px;
+    text-align: right;
+  }
+
+  /* RIGHT PANEL — QUEUE */
+  .queue-panel {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .queue-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .queue-header .panel-title { padding: 0; border: none; }
+
+  .status-bar {
+    margin-left: auto;
+    display: flex;
+    gap: 16px;
+  }
+  .stat-pill {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .pill-wait { background: var(--surface2); color: var(--text2); }
+  .pill-run { background: var(--accent-dim); color: var(--accent); }
+  .pill-done { background: rgba(0,180,255,0.1); color: #00b4ff; }
+  .pill-err { background: var(--danger-dim); color: var(--danger); }
+
+  .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: currentColor;
+  }
+  .dot.pulse {
+    animation: pulse 1.2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* QUEUE LIST */
+  .queue-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .job-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+    display: grid;
+    grid-template-columns: 32px 1fr auto;
+    gap: 10px;
+    align-items: start;
+    transition: border-color 0.2s;
+  }
+  .job-card.running {
+    border-color: var(--accent-mid);
+    background: rgba(0,255,136,0.03);
+  }
+  .job-card.done {
+    border-color: rgba(0,180,255,0.3);
+    background: rgba(0,180,255,0.03);
+  }
+  .job-card.error {
+    border-color: rgba(255,68,85,0.3);
+    background: var(--danger-dim);
+  }
+  .job-card.waiting { opacity: 0.6; }
+
+  .job-num {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+    text-align: right;
+    padding-top: 1px;
+  }
+  .job-card.running .job-num { color: var(--accent); }
+  .job-card.done .job-num { color: #00b4ff; }
+
+  .job-body { min-width: 0; }
+  .job-prompt {
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.5;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;
+  }
+  .job-meta {
+    display: flex;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    flex-wrap: wrap;
+  }
+  .job-meta span { color: var(--text2); }
+
+  .job-status {
+    font-family: var(--mono);
+    font-size: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    min-width: 80px;
+  }
+  .status-badge {
+    padding: 2px 7px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+  }
+  .badge-wait { background: var(--surface2); color: var(--text3); }
+  .badge-run { background: var(--accent-dim); color: var(--accent); }
+  .badge-done { background: rgba(0,180,255,0.12); color: #00b4ff; }
+  .badge-err { background: var(--danger-dim); color: var(--danger); }
+  .badge-delay { background: var(--warn-dim); color: var(--warn); }
+
+  .job-timer {
+    font-size: 10px;
+    color: var(--text3);
+  }
+
+  /* PROGRESS BAR */
+  .progress-wrap {
+    height: 2px;
+    background: var(--border);
+    border-radius: 1px;
+    overflow: hidden;
+    margin-top: 6px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 1px;
+    transition: width 0.5s linear;
+  }
+  .progress-fill.delay-fill { background: var(--warn); }
+  .progress-fill.error-fill { background: var(--danger); }
+  .progress-fill.done-fill { background: #00b4ff; }
+
+  /* LOG PANEL */
+  .log-panel {
+    border-top: 1px solid var(--border);
+    height: 140px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .log-header {
+    padding: 6px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .log-title {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    letter-spacing: 0.1em;
+  }
+  .log-clear {
+    margin-left: auto;
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text3);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 2px 6px;
+  }
+  .log-clear:hover { color: var(--text); }
+  .log-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 6px 16px;
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1.7;
+    color: var(--text2);
+  }
+  .log-line { display: flex; gap: 10px; }
+  .log-time { color: var(--text3); min-width: 60px; }
+  .log-msg.ok { color: var(--accent); }
+  .log-msg.warn { color: var(--warn); }
+  .log-msg.err { color: var(--danger); }
+  .log-msg.info { color: var(--text2); }
+
+  /* EMPTY STATE */
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text3);
+    font-family: var(--mono);
+    font-size: 12px;
+    gap: 8px;
+  }
+  .empty-icon { font-size: 28px; opacity: 0.4; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">VEO<span>/</span>QUEUE <span>v3.1</span></div>
+  <div style="width:1px;height:16px;background:var(--border)"></div>
+  <div style="font-size:12px;color:var(--text3);font-family:var(--mono)">Vertex AI Studio · Batch Runner</div>
+  <div class="header-stats">
+    <div><b id="hTotal">0</b> jobs</div>
+    <div><b id="hDone">0</b> done</div>
+    <div><b id="hErr">0</b> errors</div>
+    <div id="hEta" style="display:none">ETA <b id="hEtaVal">—</b></div>
+  </div>
+</header>
+
+<main>
+  <!-- LEFT: CONFIG -->
+  <div class="config-panel">
+    <div class="panel-title">// CONFIG</div>
+    <div class="config-body">
+
+      <div class="field">
+        <label>GOOGLE CLOUD PROJECT ID</label>
+        <input type="text" id="projectId" placeholder="my-project-123" />
+      </div>
+
+      <div class="field">
+        <label>REGION</label>
+        <select id="region">
+          <option value="us-central1">us-central1</option>
+          <option value="us-east4">us-east4</option>
+          <option value="europe-west4">europe-west4</option>
+          <option value="asia-southeast1">asia-southeast1</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>GCS OUTPUT BUCKET (gs://...)</label>
+        <input type="text" id="bucket" placeholder="gs://my-bucket/veo-output/" />
+      </div>
+
+      <hr class="divider">
+
+      <div class="field">
+        <label>PROMPTS — mỗi dòng 1 prompt</label>
+        <textarea id="promptsInput" placeholder="A futuristic humanoid robot performing a backflip in a dark studio, cinematic 4K, slow motion, dramatic lighting, blue rim light&#10;An old industrial robot arm from 1970s moving slowly in a factory, grainy film look, sepia tone&#10;..."></textarea>
+        <div class="hint" style="margin-top:5px">
+          <b id="promptCount">0</b> prompts · Enter để xuống dòng, mỗi dòng = 1 job
+        </div>
+      </div>
+
+      <div class="row-2">
+        <div class="field">
+          <label>DURATION (giây)</label>
+          <select id="duration">
+            <option value="5">5s — hook/cut nhanh</option>
+            <option value="6" selected>6s — standard</option>
+            <option value="7">7s — dramatic</option>
+            <option value="8">8s — slow motion</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>ASPECT RATIO</label>
+          <select id="aspectRatio">
+            <option value="16:9" selected>16:9 — YouTube</option>
+            <option value="9:16">9:16 — Short</option>
+            <option value="1:1">1:1 — Square</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>DELAY GIỮA CÁC JOB</label>
+        <div class="slider-row">
+          <input type="range" id="delaySlider" min="15" max="300" value="60" step="5">
+          <span class="slider-val"><span id="delayVal">60</span>s</span>
+        </div>
+        <div class="hint">Khuyến nghị ≥ 60s để tránh rate limit</div>
+      </div>
+
+      <div class="field">
+        <label>CONCURRENT JOBS (chạy song song)</label>
+        <select id="concurrent">
+          <option value="1" selected>1 — an toàn</option>
+          <option value="2">2 — nhanh hơn</option>
+          <option value="3">3 — cần quota cao</option>
+        </select>
+      </div>
+
+      <hr class="divider">
+
+      <div class="field">
+        <label>NEGATIVE PROMPT (áp dụng cho tất cả)</label>
+        <textarea id="negPrompt" style="min-height:55px">blurry, low quality, text overlay, watermark, distorted faces, bad anatomy</textarea>
+      </div>
+
+      <hr class="divider">
+
+      <button class="btn btn-primary" id="startBtn" onclick="startQueue()">▶ START QUEUE</button>
+      <div class="btn-row">
+        <button class="btn btn-ghost" style="flex:1" onclick="pauseQueue()" id="pauseBtn" disabled>⏸ PAUSE</button>
+        <button class="btn btn-danger" style="flex:1" onclick="stopQueue()" id="stopBtn" disabled>■ STOP</button>
+      </div>
+
+      <div id="loadPromptsSection" style="display:flex;flex-direction:column;gap:8px">
+        <hr class="divider">
+        <button class="btn btn-ghost" onclick="loadRobotPrompts()" style="font-size:11px">⚡ Load 34 Robot AI Prompts</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- RIGHT: QUEUE -->
+  <div class="queue-panel">
+    <div class="queue-header">
+      <div class="panel-title">// QUEUE</div>
+      <div class="status-bar">
+        <div class="stat-pill pill-wait"><div class="dot"></div><span id="cntWait">0</span> waiting</div>
+        <div class="stat-pill pill-run"><div class="dot pulse" id="runDot" style="display:none"></div><span id="cntRun">0</span> running</div>
+        <div class="stat-pill pill-done"><div class="dot"></div><span id="cntDone">0</span> done</div>
+        <div class="stat-pill pill-err"><div class="dot"></div><span id="cntErr">0</span> error</div>
+      </div>
+    </div>
+
+    <div class="queue-list" id="queueList">
+      <div class="empty-state" id="emptyState">
+        <div class="empty-icon">◈</div>
+        <div>Chưa có job nào</div>
+        <div style="font-size:10px;color:var(--text3)">Nhập prompts và nhấn START</div>
+      </div>
+    </div>
+
+    <div class="log-panel">
+      <div class="log-header">
+        <span class="log-title">// LOG</span>
+        <button class="log-clear" onclick="clearLog()">clear</button>
+      </div>
+      <div class="log-body" id="logBody"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+  const ROBOT_PROMPTS = [
+    {p:"A humanoid robot performing a perfect double backflip, landing smoothly on both feet, dark studio background, dramatic rim lighting, cinematic 4K, ultra slow motion", dur:8, section:"HOOK"},
+    {p:"Six identical white humanoid robots performing synchronized backflips on a concert stage, colorful spotlights, aerial wide shot, 4K cinematic", dur:7, section:"HOOK"},
+    {p:"A clunky industrial robot arm from 1961, slowly moving in a General Motors factory, black and white grainy film, archival footage look, dust particles", dur:6, section:"LỊCH SỬ"},
+    {p:"WABOT-1 humanoid robot from 1973 walking awkwardly in a Japanese laboratory, vintage film look, warm sepia tone, slow jerky movement", dur:6, section:"LỊCH SỬ"},
+    {p:"ASIMO Honda robot climbing stairs slowly in year 2000, bright white lab environment, clean scientific lighting, slight robotic wobble", dur:6, section:"LỊCH SỬ"},
+    {p:"ASIMO robot carefully pouring water into a cup and attempting a handshake, awkward movement, white laboratory, neutral documentary lighting", dur:6, section:"LỊCH SỬ"},
+    {p:"Cinematic black screen with single white text caption fade in and out, pure black background, clean modern typography, film grain overlay", dur:5, section:"TRANSITION"},
+    {p:"Boston Dynamics Atlas robot being pushed by a pole and immediately recovering its balance, indoor warehouse, fluorescent lighting, slow motion impact", dur:7, section:"BD ERA"},
+    {p:"A bipedal humanoid robot carrying a heavy cardboard box through a snowy outdoor environment, walking confidently without slipping, overcast winter sky", dur:7, section:"BD ERA"},
+    {p:"A humanoid robot running and jumping over obstacles in a parkour course, warehouse setting, dynamic camera tracking, 2019 cinematic look", dur:7, section:"BD ERA"},
+    {p:"A humanoid robot performing a perfect standing backflip in slow motion, crowd reacting in the background, dramatic lighting, 4K cinema", dur:8, section:"BD ERA"},
+    {p:"Two humanoid robots dancing in sync to music, smooth fluid movement, studio lighting, 2020 aesthetic, wide shot showing full body", dur:7, section:"BD ERA"},
+    {p:"A yellow quadruped robot dog walking through an industrial factory autonomously, mapping the environment with sensors, fluorescent lights above", dur:6, section:"BD ERA"},
+    {p:"A humanoid robot running along scaffolding and leaping across gaps in a construction site, action shot, handheld camera shake, industrial atmosphere", dur:7, section:"BD ERA"},
+    {p:"A humanoid robot slipping and falling awkwardly on a wet floor, the fall in slow motion, comedic tone, bright lab lighting, behind the scenes atmosphere", dur:6, section:"BD ERA"},
+    {p:"Cinematic title card: glitch text reveal on black background, futuristic minimal aesthetic, green terminal cursor blinking", dur:5, section:"TRANSITION"},
+    {p:"A sleek all-electric humanoid robot with a smooth featureless face, head rotating 360 degrees smoothly, dark background, dramatic product lighting, 4K", dur:7, section:"2023-26"},
+    {p:"A humanoid robot organizing automotive parts on a factory assembly line at Hyundai plant, precise arm movements, overhead industrial lighting, real factory environment", dur:7, section:"2023-26"},
+    {p:"Tesla Optimus Gen 2 robot hands folding a t-shirt with 22 degrees of freedom, extreme close up on hands, white clean environment, slow motion detail", dur:8, section:"2023-26"},
+    {p:"A bipedal robot walking confidently on soft outdoor grass terrain without falling, suburban environment, natural daylight, autonomous navigation", dur:6, section:"2023-26"},
+    {p:"A humanoid robot sprinting at full speed 3.3 meters per second, motion blur on legs, laboratory track, high speed camera, world record attempt", dur:6, section:"2023-26"},
+    {p:"A humanoid electric robot performing a perfect backflip, first ever by an electric bipedal robot, dramatic stadium lighting, slow motion replay", dur:8, section:"2023-26"},
+    {p:"A compact humanoid robot executing a perfect side flip in a single smooth motion, landing precisely, dark studio, rim lighting, first time in history caption", dur:8, section:"2023-26"},
+    {p:"Six humanoid robots performing a perfectly synchronized dance routine on a massive concert stage, thousands of fans watching, stadium lighting, aerial drone shot", dur:8, section:"2023-26"},
+    {p:"Rapid montage of five different humanoid robots working in five different factories BMW, Toyota, Tesla, fast cuts per beat, industrial cinematic grade", dur:7, section:"MONTAGE"},
+    {p:"Cinematic black screen transition, slow fade to black, low ominous ambient sound visualization, tension building", dur:5, section:"TRANSITION"},
+    {p:"A humanoid robot working side by side with human workers on a Tesla factory floor, both performing identical tasks, wide shot showing scale, real environment", dur:7, section:"DARK SIDE"},
+    {p:"A humanoid robot adapting in real time to a chaotic, unpredictable warehouse environment, objects moving, robot adjusting path autonomously, overhead tracking shot", dur:7, section:"DARK SIDE"},
+    {p:"A humanoid robot stumbling and falling at a public demonstration event, crowd watching, the fall in slow motion, stadium lighting, raw unedited footage look", dur:6, section:"DARK SIDE"},
+    {p:"Extreme close up of large bold white numbers 10,000,000 appearing on pure black background one digit at a time, cinematic reveal, minimal", dur:5, section:"DARK SIDE"},
+    {p:"A humanoid robot performing a slow motion double backflip, 50 percent speed, every muscle movement visible, dark studio, single spotlight, cinematic 4K", dur:8, section:"OUTRO"},
+    {p:"Montage of a domestic service robot serving food, a kitchen robot cooking, a security robot patrolling a neighborhood, warm futuristic near-future aesthetic", dur:7, section:"OUTRO"},
+    {p:"Cinematic black screen with a single question in white minimal typography slowly appearing, pure black background, film grain, ambient silence", dur:6, section:"OUTRO"},
+    {p:"Clean minimal end screen on black background, subscribe button animation, channel branding, green accent color, modern flat design", dur:5, section:"CTA"}
+  ];
+
+  let jobs = [];
+  let isRunning = false;
+  let isPaused = false;
+  let currentJobIndex = 0;
+  let timers = [];
+
+  // DELAY SLIDER
+  document.getElementById('delaySlider').addEventListener('input', function() {
+    document.getElementById('delayVal').textContent = this.value;
+  });
+
+  // PROMPT COUNT
+  document.getElementById('promptsInput').addEventListener('input', updatePromptCount);
+  function updatePromptCount() {
+    const lines = document.getElementById('promptsInput').value.split('\n').filter(l => l.trim());
+    document.getElementById('promptCount').textContent = lines.length;
+  }
+
+  function loadRobotPrompts() {
+    const prompts = ROBOT_PROMPTS.map(r => r.p).join('\n');
+    document.getElementById('promptsInput').value = prompts;
+    updatePromptCount();
+    log('info', `Loaded ${ROBOT_PROMPTS.length} robot AI prompts`);
+  }
+
+  function log(type, msg) {
+    const body = document.getElementById('logBody');
+    const now = new Date();
+    const time = now.toTimeString().slice(0,8);
+    const line = document.createElement('div');
+    line.className = 'log-line';
+    line.innerHTML = `<span class="log-time">${time}</span><span class="log-msg ${type}">${msg}</span>`;
+    body.appendChild(line);
+    body.scrollTop = body.scrollHeight;
+  }
+
+  function clearLog() {
+    document.getElementById('logBody').innerHTML = '';
+  }
+
+  function updateStats() {
+    const wait = jobs.filter(j => j.status === 'waiting').length;
+    const run = jobs.filter(j => j.status === 'running' || j.status === 'delay').length;
+    const done = jobs.filter(j => j.status === 'done').length;
+    const err = jobs.filter(j => j.status === 'error').length;
+
+    document.getElementById('cntWait').textContent = wait;
+    document.getElementById('cntRun').textContent = run;
+    document.getElementById('cntDone').textContent = done;
+    document.getElementById('cntErr').textContent = err;
+    document.getElementById('hTotal').textContent = jobs.length;
+    document.getElementById('hDone').textContent = done;
+    document.getElementById('hErr').textContent = err;
+
+    const runDot = document.getElementById('runDot');
+    runDot.style.display = run > 0 ? 'block' : 'none';
+
+    // ETA
+    if (isRunning && wait > 0) {
+      const delay = parseInt(document.getElementById('delaySlider').value);
+      const etaSec = wait * (60 + delay);
+      const etaMin = Math.ceil(etaSec / 60);
+      document.getElementById('hEta').style.display = 'flex';
+      document.getElementById('hEtaVal').textContent = etaMin + ' phút';
+    } else {
+      document.getElementById('hEta').style.display = 'none';
+    }
+  }
+
+  function renderJob(job) {
+    let card = document.getElementById('job-' + job.id);
+    if (!card) {
+      card = document.createElement('div');
+      card.id = 'job-' + job.id;
+      card.className = 'job-card';
+      document.getElementById('emptyState').style.display = 'none';
+      document.getElementById('queueList').appendChild(card);
+    }
+
+    const statusClass = { waiting:'waiting', running:'running', delay:'running', done:'done', error:'error' }[job.status] || '';
+    const badgeClass = { waiting:'badge-wait', running:'badge-run', delay:'badge-delay', done:'badge-done', error:'badge-err' }[job.status];
+    const badgeText = { waiting:'WAIT', running:'GEN...', delay:'DELAY', done:'DONE', error:'ERROR' }[job.status];
+
+    const section = ROBOT_PROMPTS[job.id - 1]?.section || '';
+    const dur = job.duration || 6;
+    const ratio = job.aspectRatio || '16:9';
+
+    let progressHtml = '';
+    if (job.status === 'running') {
+      progressHtml = `<div class="progress-wrap"><div class="progress-fill" id="prog-${job.id}" style="width:0%"></div></div>`;
+    } else if (job.status === 'delay') {
+      progressHtml = `<div class="progress-wrap"><div class="progress-fill delay-fill" id="prog-${job.id}" style="width:0%"></div></div>`;
+    } else if (job.status === 'done') {
+      progressHtml = `<div class="progress-wrap"><div class="progress-fill done-fill" style="width:100%"></div></div>`;
+    } else if (job.status === 'error') {
+      progressHtml = `<div class="progress-wrap"><div class="progress-fill error-fill" style="width:100%"></div></div>`;
+    }
+
+    card.className = 'job-card ' + statusClass;
+    card.innerHTML = `
+      <div class="job-num">#${String(job.id).padStart(2,'0')}</div>
+      <div class="job-body">
+        <div class="job-prompt" title="${job.prompt}">${job.prompt}</div>
+        <div class="job-meta">
+          ${section ? `<span>${section}</span>` : ''}
+          <span>${dur}s</span>
+          <span>${ratio}</span>
+          ${job.outputUri ? `<span style="color:var(--accent)">✓ ${job.outputUri.split('/').pop()}</span>` : ''}
+          ${job.error ? `<span style="color:var(--danger)">${job.error}</span>` : ''}
+        </div>
+        ${progressHtml}
+      </div>
+      <div class="job-status">
+        <span class="status-badge ${badgeClass}">${badgeText}</span>
+        ${job.elapsed ? `<span class="job-timer">${job.elapsed}s</span>` : ''}
+      </div>
+    `;
+  }
+
+  function animateProgress(jobId, durationMs, fillClass) {
+    const prog = document.getElementById('prog-' + jobId);
+    if (!prog) return;
+    const start = Date.now();
+    const tick = () => {
+      if (!document.getElementById('prog-' + jobId)) return;
+      const pct = Math.min(100, ((Date.now() - start) / durationMs) * 100);
+      const el = document.getElementById('prog-' + jobId);
+      if (el) el.style.width = pct + '%';
+      if (pct < 100) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
+  async function callVeoAPI(job) {
+    const projectId = document.getElementById('projectId').value.trim();
+    const region = document.getElementById('region').value;
+    const bucket = document.getElementById('bucket').value.trim();
+    const negPrompt = document.getElementById('negPrompt').value.trim();
+
+    if (!projectId || !bucket) throw new Error('Thiếu Project ID hoặc GCS Bucket');
+
+    const endpoint = `https://${region}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${region}/publishers/google/models/veo-3.1-generate-001:predictLongRunning`;
+
+    const body = {
+      instances: [{
+        prompt: job.prompt,
+        ...(negPrompt ? { negativePrompt: negPrompt } : {})
+      }],
+      parameters: {
+        aspectRatio: job.aspectRatio,
+        durationSeconds: job.duration,
+        outputGcsUri: bucket.endsWith('/') ? bucket + `job_${job.id}/` : bucket + `/job_${job.id}/`,
+        sampleCount: 1
+      }
+    };
+
+    // Get access token — requires gcloud auth or service account in environment
+    // In production: replace with actual token fetch
+    let token = '';
+    try {
+      // Try to get from meta server (works in Vertex AI environment)
+      const tokenRes = await fetch('http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token', {
+        headers: { 'Metadata-Flavor': 'Google' }
+      });
+      if (tokenRes.ok) {
+        const td = await tokenRes.json();
+        token = td.access_token;
+      }
+    } catch(e) {
+      // Running locally — user must provide token
+      token = window._gcloudToken || '';
+    }
+
+    if (!token) {
+      throw new Error('Không có access token. Chạy: gcloud auth print-access-token rồi paste vào setToken()');
+    }
+
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || `HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    return data; // Long-running operation
+  }
+
+  async function pollOperation(opName, jobId) {
+    const projectId = document.getElementById('projectId').value.trim();
+    const region = document.getElementById('region').value;
+    const token = window._gcloudToken || '';
+
+    const url = `https://${region}-aiplatform.googleapis.com/v1/${opName}`;
+    const maxAttempts = 30;
+
+    for (let i = 0; i < maxAttempts; i++) {
+      await sleep(8000);
+      try {
+        const res = await fetch(url, {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        const data = await res.json();
+        if (data.done) {
+          if (data.error) throw new Error(data.error.message);
+          const uri = data.response?.videos?.[0]?.gcsUri || data.response?.outputUri || 'gs://output/done';
+          return uri;
+        }
+      } catch(e) {
+        if (i === maxAttempts - 1) throw e;
+      }
+    }
+    throw new Error('Timeout — operation quá 4 phút');
+  }
+
+  function sleep(ms) {
+    return new Promise(r => setTimeout(r, ms));
+  }
+
+  async function runJob(job) {
+    job.status = 'running';
+    job.startTime = Date.now();
+    renderJob(job);
+    updateStats();
+    animateProgress(job.id, job.duration * 1000 * 12, 'progress-fill'); // estimate 12x realtime
+    log('info', `[#${job.id}] Gửi request: ${job.prompt.slice(0,50)}...`);
+
+    try {
+      const opData = await callVeoAPI(job);
+      log('info', `[#${job.id}] Operation: ${opData.name}`);
+
+      const outputUri = await pollOperation(opData.name, job.id);
+
+      job.status = 'done';
+      job.elapsed = Math.round((Date.now() - job.startTime) / 1000);
+      job.outputUri = outputUri;
+      renderJob(job);
+      log('ok', `[#${job.id}] Xong! → ${outputUri}`);
+    } catch(e) {
+      job.status = 'error';
+      job.error = e.message;
+      job.elapsed = Math.round((Date.now() - job.startTime) / 1000);
+      renderJob(job);
+      log('err', `[#${job.id}] Lỗi: ${e.message}`);
+    }
+
+    updateStats();
+  }
+
+  async function runDelayedJob(job, delayMs) {
+    job.status = 'delay';
+    renderJob(job);
+    updateStats();
+    log('warn', `[#${job.id}] Chờ ${delayMs/1000}s trước khi gửi...`);
+    animateProgress(job.id, delayMs, 'delay-fill');
+    await sleep(delayMs);
+
+    if (!isRunning) return;
+    if (isPaused) {
+      while (isPaused && isRunning) await sleep(500);
+    }
+    if (!isRunning) return;
+
+    await runJob(job);
+  }
+
+  async function startQueue() {
+    const promptText = document.getElementById('promptsInput').value.trim();
+    if (!promptText) { log('err', 'Chưa nhập prompts!'); return; }
+
+    const promptLines = promptText.split('\n').filter(l => l.trim());
+    const duration = parseInt(document.getElementById('duration').value);
+    const aspectRatio = document.getElementById('aspectRatio').value;
+    const delay = parseInt(document.getElementById('delaySlider').value) * 1000;
+    const concurrent = parseInt(document.getElementById('concurrent').value);
+
+    jobs = promptLines.map((p, i) => ({
+      id: i + 1,
+      prompt: p.trim(),
+      status: 'waiting',
+      duration,
+      aspectRatio,
+      startTime: null,
+      elapsed: null,
+      outputUri: null,
+      error: null
+    }));
+
+    document.getElementById('queueList').innerHTML = '';
+    document.getElementById('emptyState').style.display = 'none';
+    jobs.forEach(j => renderJob(j));
+
+    isRunning = true;
+    isPaused = false;
+    document.getElementById('startBtn').disabled = true;
+    document.getElementById('pauseBtn').disabled = false;
+    document.getElementById('stopBtn').disabled = false;
+    updateStats();
+
+    log('ok', `Queue bắt đầu: ${jobs.length} jobs, delay ${delay/1000}s, concurrent ${concurrent}`);
+
+    // Run in batches
+    for (let i = 0; i < jobs.length; i += concurrent) {
+      if (!isRunning) break;
+      while (isPaused && isRunning) await sleep(500);
+
+      const batch = jobs.slice(i, i + concurrent);
+      const batchPromises = batch.map((job, batchIdx) => {
+        const jobDelay = i === 0 && batchIdx === 0 ? 0 : delay;
+        return runDelayedJob(job, jobDelay);
+      });
+      await Promise.all(batchPromises);
+    }
+
+    if (isRunning) {
+      isRunning = false;
+      log('ok', `Queue hoàn tất! Done: ${jobs.filter(j=>j.status==='done').length}, Error: ${jobs.filter(j=>j.status==='error').length}`);
+      document.getElementById('startBtn').disabled = false;
+      document.getElementById('pauseBtn').disabled = true;
+      document.getElementById('stopBtn').disabled = true;
+    }
+    updateStats();
+  }
+
+  function pauseQueue() {
+    isPaused = !isPaused;
+    document.getElementById('pauseBtn').textContent = isPaused ? '▶ RESUME' : '⏸ PAUSE';
+    log('warn', isPaused ? 'Queue đã tạm dừng' : 'Queue tiếp tục');
+  }
+
+  function stopQueue() {
+    isRunning = false;
+    isPaused = false;
+    jobs.filter(j => j.status === 'waiting' || j.status === 'delay').forEach(j => {
+      j.status = 'waiting';
+      renderJob(j);
+    });
+    document.getElementById('startBtn').disabled = false;
+    document.getElementById('pauseBtn').disabled = true;
+    document.getElementById('pauseBtn').textContent = '⏸ PAUSE';
+    document.getElementById('stopBtn').disabled = true;
+    log('err', 'Queue đã dừng');
+    updateStats();
+  }
+
+  // Helper: set token manually from console
+  window.setToken = function(token) {
+    window._gcloudToken = token;
+    log('ok', 'Token đã được set ✓');
+  };
+
+  updateStats();
+  log('info', 'UI sẵn sàng. Nhập Project ID, GCS Bucket, và prompts để bắt đầu.');
+  log('info', 'Nếu chạy local: gọi setToken("YOUR_TOKEN") trong console sau khi chạy: gcloud auth print-access-token');
+</script>
+</body>
+</html>
