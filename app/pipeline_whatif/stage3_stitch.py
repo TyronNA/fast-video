@@ -27,8 +27,8 @@ def run(job: WhatIfJob, work_dir: Path) -> str:
         + ["-filter_complex", concat_filter,
            "-map", "[outv]",
            "-c:v", "libx264",
-           "-crf", "23",
-           "-preset", "fast",
+           "-crf", "16",
+           "-preset", "slow",
            "-pix_fmt", "yuv420p",
            "-movflags", "+faststart",
            out_path]

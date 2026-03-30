@@ -23,8 +23,8 @@ _BRAIN_RESPONSE_SCHEMA = {
         "intro_phrase": {"type": "STRING"},
         "visuals": {
             "type": "ARRAY",
-            "minItems": 4,
-            "maxItems": 5,
+            "minItems": 5,
+            "maxItems": 6,
             "items": {
                 "type": "OBJECT",
                 "required": ["prompt", "duration", "landmark_name"],
@@ -66,31 +66,32 @@ Quality tags (always append to every prompt):
 _BRAIN_PROMPT = (
     'You are a Veo video director creating a futuristic "What If" YouTube Shorts video.\n\n'
     "Topic: __TOPIC__\n\n"
-    "Task: Generate 4-5 cinematic shots for a 16-20 second vertical Shorts video imagining __TOPIC__ transformed far into the future.\n\n"
+    "Task: Generate exactly 6 cinematic shots for a 24-28 second vertical Shorts video imagining __TOPIC__ transformed far into the future.\n\n"
     "__VEO_GUIDE__\n"
     "Shot structure:\n"
-    "- Shot 1: Wide aerial overview of the entire city skyline — establish the futuristic scale. landmark_name = \"\"\n"
-    "- Shots 2-5: Pick 3-4 of the most ICONIC and RECOGNIZABLE areas/landmarks of __TOPIC__ and reimagine each one as a futuristic megacity location. Choose areas specific to THIS city — not generic subjects. Each shot reveals a different part of the city.\n\n"
+    '- Shot 1 (opening hero): Sweeping wide aerial reveal of the entire futuristic city — establish the scale. duration=6, landmark_name=""\n'
+    "- Shots 2-6: Pick 5 of the most ICONIC and RECOGNIZABLE real-world areas/districts of __TOPIC__ and reimagine each one as a futuristic megacity location. Must be places that actually exist and are famous in __TOPIC__ — specific to THIS city, not generic labels. Each shot reveals a completely different part of the city. duration=4 each.\n\n"
     "Return ONLY a valid JSON object (no markdown, no explanation):\n"
     '{\n'
     '  "intro_phrase": "<punchy 6-8 word question in __LANG__, e.g. What would Tokyo look like in 3000?>",\n'
     '  "visuals": [\n'
-    '    {"prompt": "<shot prompt following the formula>", "duration": 4, "landmark_name": ""},\n'
-    '    {"prompt": "<shot prompt following the formula>", "duration": 4, "landmark_name": "<iconic area name, 2-4 words>"},\n'
-    '    {"prompt": "<shot prompt following the formula>", "duration": 4, "landmark_name": "<iconic area name, 2-4 words>"},\n'
-    '    {"prompt": "<shot prompt following the formula>", "duration": 4, "landmark_name": "<iconic area name, 2-4 words>"},\n'
-    '    {"prompt": "<shot prompt following the formula — optional 5th shot>", "duration": 4, "landmark_name": "<iconic area name, 2-4 words>"}\n'
+    '    {"prompt": "<shot 1 — wide aerial hero shot>", "duration": 6, "landmark_name": ""},\n'
+    '    {"prompt": "<shot 2 — iconic district of __TOPIC__ reimagined>", "duration": 4, "landmark_name": "<real area name in __LANG__, 2-4 words>"},\n'
+    '    {"prompt": "<shot 3 — different iconic area of __TOPIC__ reimagined>", "duration": 4, "landmark_name": "<real area name in __LANG__, 2-4 words>"},\n'
+    '    {"prompt": "<shot 4 — different iconic area of __TOPIC__ reimagined>", "duration": 4, "landmark_name": "<real area name in __LANG__, 2-4 words>"},\n'
+    '    {"prompt": "<shot 5 — different iconic area of __TOPIC__ reimagined>", "duration": 4, "landmark_name": "<real area name in __LANG__, 2-4 words>"},\n'
+    '    {"prompt": "<shot 6 — cinematic closing wide shot of __TOPIC__>", "duration": 4, "landmark_name": "<real area name in __LANG__, 2-4 words>"}\n'
     '  ],\n'
     '  "vibe": "<music genre that fits this city\'s futuristic vibe>",\n'
     '  "bg_music_suggestion": "<specific style description>"\n'
     '}\n\n'
     "Hard rules:\n"
-    "- Each shot MUST use a DIFFERENT camera move AND a DIFFERENT atmosphere — no repeats\n"
-    "- Shots 2-5: subjects must be SPECIFIC to __TOPIC__ (real iconic areas reimagined), not generic city elements\n"
-    "- NO historical monuments, temples, ruins, war memorials — futuristic only\n"
+    "- Exactly 6 shots: shot 1 duration=6, shots 2-6 duration=4\n"
+    "- Each shot MUST use a DIFFERENT camera move AND a DIFFERENT atmosphere — no repeats across all 6\n"
+    "- landmark_name for shots 2-6 MUST be real, recognizable place names that exist in __TOPIC__ — NOT generic labels like 'City Center', 'Old Quarter', 'Central District'\n"
+    "- NO historical monuments, temples, ruins, war memorials — futuristic transformation only\n"
     "- NO faces, no text in scene, no watermarks\n"
-    "- All durations = 4\n"
-    "- intro_phrase in __LANG__; landmark_name values in __LANG__"
+    "- intro_phrase and landmark_name values in __LANG__"
 )
 
 
@@ -145,42 +146,61 @@ def _cleanup_json_string(value: str) -> str:
 
 
 def _fallback_brain(topic: str, language: str) -> dict:
-    intro = f"What would {topic} look like in the future?"
-    areas = ["Old Quarter", "Central Lake", "City Center"]
     return {
-        "intro_phrase": intro,
+        "intro_phrase": f"What would {topic} look like in the future?",
         "visuals": [
             {
                 "prompt": (
-                    f"Futuristic {topic} megacity aerial drone overview, glass towers, flying vehicles, "
-                    "hyper-realistic, 8k, atmospheric neon lighting, slow pan, no text"
+                    f"Sweeping aerial drone shot, futuristic {topic} megacity skyline, glass mega-towers, "
+                    "flying vehicles, blue-hour ambient glow, cinematic, photorealistic, ultra-detailed, 8K, no text, no watermark"
                 ),
-                "duration": 4,
+                "duration": 6,
                 "landmark_name": "",
             },
             {
                 "prompt": (
-                    f"Futuristic urban district of {topic}, holographic billboards, elevated sky-parks, "
-                    "cinematic wide, hyper-realistic, 8k, dramatic sky, no text"
+                    f"Slow cinematic dolly forward, futuristic commercial district of {topic}, "
+                    "holographic billboards, elevated sky-bridges, golden-hour cinematic lighting, "
+                    "cinematic, photorealistic, ultra-detailed, 8K, no text, no watermark"
                 ),
                 "duration": 4,
-                "landmark_name": areas[0],
+                "landmark_name": f"{topic} Business District",
             },
             {
                 "prompt": (
-                    f"Iconic lake or river of {topic} with futuristic city skyline backdrop, "
-                    "glowing reflections, flying taxis, cinematic wide, 8k, no text"
+                    f"Bird's-eye view slow pan, futuristic waterfront of {topic}, "
+                    "glowing skyline reflections, flying taxis, night city neon bloom, "
+                    "cinematic, photorealistic, ultra-detailed, 8K, no text, no watermark"
                 ),
                 "duration": 4,
-                "landmark_name": areas[1],
+                "landmark_name": f"{topic} Waterfront",
             },
             {
                 "prompt": (
-                    f"Futuristic central plaza and commercial district of {topic}, "
-                    "crowds, neon lights, autonomous pods, vertical gardens, cinematic, 8k, no text"
+                    f"Low-altitude flyover, futuristic transit hub of {topic}, "
+                    "autonomous pods, vertical gardens on towers, dramatic overcast storm light, "
+                    "cinematic, photorealistic, ultra-detailed, 8K, no text, no watermark"
                 ),
                 "duration": 4,
-                "landmark_name": areas[2],
+                "landmark_name": f"{topic} Transit Hub",
+            },
+            {
+                "prompt": (
+                    f"Wide establishing shot, futuristic residential towers of {topic}, "
+                    "rooftop sky-parks, neon-lit walkways, twilight purple sky, "
+                    "cinematic, photorealistic, ultra-detailed, 8K, no text, no watermark"
+                ),
+                "duration": 4,
+                "landmark_name": f"{topic} Sky District",
+            },
+            {
+                "prompt": (
+                    f"Slow crane up reveal, dramatic wide shot of futuristic {topic} megacity, "
+                    "entire skyline, sunrise warm diffused haze, "
+                    "cinematic, photorealistic, ultra-detailed, 8K, no text, no watermark"
+                ),
+                "duration": 4,
+                "landmark_name": f"{topic} Skyline",
             },
         ],
         "vibe": "Cyberpunk Phonk",
@@ -211,7 +231,7 @@ def _salvage_brain_from_text(raw_text: str, topic: str, language: str) -> dict:
 
     if prompts:
         visuals = []
-        for i in range(min(5, len(prompts))):
+        for i in range(min(6, len(prompts))):
             visuals.append(
                 {
                     "prompt": _cleanup_json_string(prompts[i]),
@@ -219,7 +239,7 @@ def _salvage_brain_from_text(raw_text: str, topic: str, language: str) -> dict:
                     "landmark_name": _cleanup_json_string(landmarks[i]) if i < len(landmarks) else "",
                 }
             )
-        while len(visuals) < 4:
+        while len(visuals) < 5:
             visuals.append(result["visuals"][len(visuals)])
         result["visuals"] = visuals
 

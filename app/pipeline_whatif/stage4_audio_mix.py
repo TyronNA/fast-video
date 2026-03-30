@@ -67,7 +67,7 @@ def run(job: WhatIfJob, video_path: str, work_dir: Path) -> str:
          "-i", audio_out,
          "-c:v", "copy",
          "-c:a", "aac",
-         "-b:a", "192k",
+         "-b:a", "320k",
          "-shortest",
          out_path],
         check=True, capture_output=True,
