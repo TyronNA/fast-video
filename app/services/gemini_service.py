@@ -51,24 +51,62 @@ def _vertex_host(location: str) -> str:
 
 _VEO_PROMPT_FORMULA = """\
 Every Veo prompt MUST follow this formula:
-  [UNIQUE CAMERA MOVE] + [VISUAL ANCHOR of the real landmark] + [FUTURISTIC TRANSFORMATION] + [ATMOSPHERE] + [QUALITY TAGS]
+  [UNIQUE CAMERA MOVE + LENS] + [VISUAL ANCHOR of the real landmark] + [FUTURISTIC TRANSFORMATION] + [DEPTH LAYER] + [ATMOSPHERE] + [QUALITY TAGS]
 
-Camera moves (each shot must use a DIFFERENT one):
-  sweeping aerial drone shot | slow cinematic dolly forward | bird's-eye view slow pan |
-  low-altitude flyover | wide establishing shot | slow crane up reveal | tracking shot along skyline
+Camera moves + lens (each shot must use a DIFFERENT one):
+  sweeping aerial drone shot, anamorphic wide lens | slow cinematic dolly forward, shallow depth of field |
+  bird's-eye view slow pan, wide-angle 18mm | low-altitude flyover, telephoto compression |
+  extreme low-angle looking up, wide-angle distortion | slow crane up reveal, anamorphic lens |
+  tracking shot along skyline, 35mm cinematic
 
 Atmosphere (each shot must use a DIFFERENT one):
-  blue-hour ambient glow | golden-hour cinematic lighting | dramatic overcast storm light |
-  night city neon bloom | sunrise warm diffused haze | twilight purple sky
+  blue-hour ambient glow, volumetric light shafts | golden-hour cinematic lighting, lens flare |
+  dramatic overcast storm light, god rays breaking through clouds | night city neon bloom, reflective wet surfaces |
+  sunrise warm diffused haze, bioluminescent particles floating | twilight purple sky, holographic data streams
+
+Depth layer (add ONE per prompt — creates foreground parallax):
+  massive structural beam in foreground | hovering transport pod passing close | foreground glass panel reflection |
+  energy conduit tower in foreground | cascading waterfall edge in near foreground
 
 Quality tags (always append to every prompt):
-  cinematic, photorealistic, ultra-detailed, 8K, no people, no text, no watermark
+  cinematic, hyperrealistic, ultra-detailed, 8K, anamorphic, no people, no text, no watermark
 
 CRITICAL — Visual Anchor rule:
   Each prompt MUST describe the real-world visual signature of that specific landmark FIRST, then transform it.
-  Example: instead of "futuristic Shibuya" → write "the iconic X-shaped pedestrian crossing of Shibuya, now a floating platform of glowing androids..."
-  Example: instead of "futuristic Dragon Bridge Da Nang" → write "the dragon-shaped suspension bridge spanning the Han River, now a colossal bio-mechanical dragon of living metal arching across a neon waterway..."
+  Example: instead of "futuristic Shibuya" → write "the iconic X-shaped pedestrian crossing of Shibuya, now a floating platform of glowing androids and plasma conduit networks..."
+  Example: instead of "futuristic Dragon Bridge Da Nang" → write "the dragon-shaped suspension bridge spanning the Han River, now a colossal bio-mechanical dragon of living metal with plasma breath arching across a neon waterway..."
   The visual anchor makes each clip look DIFFERENT from each other.
+"""
+
+_FICTIONAL_VEO_PROMPT_FORMULA = """\
+Every Veo prompt MUST follow this formula:
+  [UNIQUE CAMERA MOVE + LENS] + [REALM AREA SIGNATURE] + [SUPERNATURAL/ALIEN SPECTACLE] + [DEPTH LAYER] + [OTHERWORLDLY ATMOSPHERE] + [QUALITY TAGS]
+
+Camera moves + lens (each shot must use a DIFFERENT one):
+  sweeping aerial drone shot, anamorphic wide lens | slow cinematic dolly forward, shallow depth of field |
+  bird's-eye view slow pan, wide-angle 18mm | low-altitude flyover, telephoto compression |
+  extreme low-angle looking up, wide-angle distortion | slow crane up reveal, anamorphic lens |
+  tracking shot, 35mm cinematic
+
+Otherworldly atmosphere (each shot must use a DIFFERENT one — must feel alien/divine/supernatural):
+  iridescent aurora-filled sky with twin moons | ethereal golden divine radiance, floating mist |
+  volcanic crimson hellfire glow, ember particles | deep cosmic nebula backdrop, star clusters |
+  crystalline bioluminescent mist, soft blue glow | silver moonlit ethereal haze, translucent veils |
+  spectral ghost-green phosphorescence, ancient energy
+
+Depth layer (add ONE per prompt):
+  massive gate pillar in foreground | ancient stone column close-up | energy pillar in near foreground |
+  ancient lantern chain in foreground | crystal formation in close foreground
+
+Quality tags (always append to every prompt):
+  cinematic, hyperrealistic, ultra-detailed, 8K, anamorphic, no people, no text, no watermark
+
+CRITICAL — Realm Signature rule:
+  Each prompt MUST describe the canonical visual signature of that specific area/zone from its mythology or lore FIRST, then render it as a photorealistic scene.
+  Example for Thiên Đình: "the towering jade-white Nantian Gate of Heaven, twin dragon pillars flanking an ornate celestial archway, clouds of golden mist swirling below..."
+  Example for Địa Phủ: "the black iron gates of the Ten Courts of Hell, massive ox-headed guards flanking crimson lantern-lit corridors of obsidian stone..."
+  Example for Mars colony: "the vast rust-red plains of Valles Marineris canyon system, now lined with terraforming glass dome habitats stretching to the horizon..."
+  The realm signature makes each clip look VISUALLY DIFFERENT from every other clip.
 """
 
 _BRAIN_PROMPT = (
@@ -77,27 +115,64 @@ _BRAIN_PROMPT = (
     "Task: Generate exactly 6 cinematic shots for a 24-28 second vertical Shorts video imagining __TOPIC__ transformed far into the future.\n\n"
     "__VEO_GUIDE__\n"
     "Shot structure:\n"
-    '- Shot 1 (opening hero): Sweeping wide aerial reveal of the entire futuristic city — establish the scale. duration=6, landmark_name=""\n'
-    "- Shots 2-6: Pick 5 of the most ICONIC and RECOGNIZABLE real-world landmarks/areas of __TOPIC__ and reimagine each one. Must be places that actually exist and are famous — specific to THIS city, not generic labels. Each prompt MUST start by describing the real-world visual signature of that landmark (its shape, structure, or what makes it recognizable), then transform it into a futuristic version. This is the most important rule: each clip must look VISUALLY DIFFERENT from every other clip. duration=4 each.\n\n"
+    '- Shot 1 (opening hero): Awe-inspiring wide aerial reveal of the entire futuristic city — jaw-dropping scale, impossible megastructures filling the frame. duration=6, landmark_name=""\n'
+    "- Shots 2-6: Pick 5 of the most ICONIC and RECOGNIZABLE real-world landmarks/areas of __TOPIC__ and reimagine each one. Must be places that actually exist and are famous — specific to THIS city, not generic labels. Each prompt MUST start by describing the real-world visual signature of that landmark (its shape, structure, or what makes it recognizable), then transform it into a futuristic version with specific sci-fi tech (plasma conduits, anti-gravity platforms, bioluminescent crystal, neural interface towers, etc.). Each clip must look VISUALLY DIFFERENT from every other clip. duration=4 each.\n\n"
     "Return ONLY a valid JSON object (no markdown, no explanation):\n"
     '{\n'
     '  "intro_phrase": "<punchy 6-8 word question in __LANG__, e.g. What would Tokyo look like in 3000?>",\n'
     '  "visuals": [\n'
-    '    {"prompt": "<shot 1 — wide aerial hero shot>", "duration": 6, "landmark_name": ""},\n'
-    '    {"prompt": "<shot 2 — iconic district of __TOPIC__ reimagined>", "duration": 4, "landmark_name": "<real area name in __LANG__, 2-4 words>"},\n'
-    '    {"prompt": "<shot 3 — different iconic area of __TOPIC__ reimagined>", "duration": 4, "landmark_name": "<real area name in __LANG__, 2-4 words>"},\n'
-    '    {"prompt": "<shot 4 — different iconic area of __TOPIC__ reimagined>", "duration": 4, "landmark_name": "<real area name in __LANG__, 2-4 words>"},\n'
-    '    {"prompt": "<shot 5 — different iconic area of __TOPIC__ reimagined>", "duration": 4, "landmark_name": "<real area name in __LANG__, 2-4 words>"},\n'
-    '    {"prompt": "<shot 6 — cinematic closing wide shot of __TOPIC__>", "duration": 4, "landmark_name": "<real area name in __LANG__, 2-4 words>"}\n'
+    '    {"prompt": "<shot 1 — awe-inspiring wide aerial hero shot>", "duration": 6, "landmark_name": ""},\n'
+    '    {"prompt": "<shot 2 — iconic landmark of __TOPIC__ reimagined with specific sci-fi transformation>", "duration": 4, "landmark_name": "<real area name in __LANG__, 2-4 words>"},\n'
+    '    {"prompt": "<shot 3 — different iconic landmark of __TOPIC__ reimagined>", "duration": 4, "landmark_name": "<real area name in __LANG__, 2-4 words>"},\n'
+    '    {"prompt": "<shot 4 — different iconic landmark of __TOPIC__ reimagined>", "duration": 4, "landmark_name": "<real area name in __LANG__, 2-4 words>"},\n'
+    '    {"prompt": "<shot 5 — different iconic landmark of __TOPIC__ reimagined>", "duration": 4, "landmark_name": "<real area name in __LANG__, 2-4 words>"},\n'
+    '    {"prompt": "<shot 6 — cinematic closing wide shot, different landmark>", "duration": 4, "landmark_name": "<real area name in __LANG__, 2-4 words>"}\n'
     '  ],\n'
     '  "vibe": "<music genre that fits this city\'s futuristic vibe>"\n'
     '}\n\n'
     "Hard rules:\n"
     "- Exactly 6 shots: shot 1 duration=6, shots 2-6 duration=4\n"
-    "- Each shot MUST use a DIFFERENT camera move AND a DIFFERENT atmosphere — no repeats across all 6\n"
+    "- Each shot MUST use a DIFFERENT camera move+lens AND a DIFFERENT atmosphere — no repeats across all 6\n"
     "- Each Veo prompt MUST open with the real-world visual signature of that landmark before any futuristic description — this is what makes each clip look unique\n"
+    "- Each prompt MUST include one depth layer element (foreground parallax)\n"
     "- landmark_name for shots 2-6 MUST be real, recognizable place names that exist in __TOPIC__ — NOT generic labels like 'City Center', 'Old Quarter', 'Central District', 'Business District', 'Waterfront', 'Transit Hub'; MAX 4 words\n"
     "- Prefer bridges, beaches, hills, specific roads, monuments, stadiums over vague districts\n"
+    "- NO faces, no text in scene, no watermarks\n"
+    "- intro_phrase and landmark_name values in __LANG__"
+)
+
+_FICTIONAL_BRAIN_PROMPT = (
+    'You are a Veo video director creating a mythological/fantastical "What If" YouTube Shorts video.\n\n'
+    "Topic: __TOPIC__\n\n"
+    "Task: Generate exactly 6 cinematic shots for a 24-28 second vertical Shorts video rendering __TOPIC__ as a jaw-dropping photorealistic world.\n\n"
+    "__VEO_GUIDE__\n"
+    "Realm visual vocabulary — use the appropriate style based on the topic:\n"
+    "- Planets (Mars/Sao Hỏa, Moon/Mặt Trăng, Mercury/Sao Thủy, etc.): alien terrain textures, terraforming dome habitats, space-age architecture, alien sky colors, twin moons/gas giant backdrops\n"
+    "- Chinese Mythology (Thiên Đình/Celestial Court, Tiên Giới/Immortal Realm, Địa Phủ/Underworld): jade and gold palatial towers, celestial dragon motifs, cloud sea terraces, ornate gate pillars, red-and-gold lanterns, black iron underworld courts\n"
+    "- Western Mythology (Heaven/Thiên Đàng, Hell/Địa Ngục, Asgard): divine white marble, towering golden gates, volcanic obsidian hellscapes, Norse stone halls with runes, rainbow bridge Bifrost\n"
+    "- Cosmic/Abstract: impossible non-Euclidean geometry, living crystalline light, fractal landscapes\n\n"
+    "Shot structure:\n"
+    '- Shot 1 (opening hero): Awe-inspiring wide aerial reveal of the entire realm — overwhelming divine/alien scale, impossible beauty or terror. duration=6, landmark_name=""\n'
+    "- Shots 2-6: Pick 5 of the most ICONIC zones, structures, or features of __TOPIC__ from its mythology or cultural lore and render each one. Each prompt MUST start by describing the canonical visual signature of that area (its mythological iconography — what makes it recognizable from stories/art), then visualize it as a stunning photorealistic scene. Each clip must look VISUALLY DIFFERENT. duration=4 each.\n\n"
+    "Return ONLY a valid JSON object (no markdown, no explanation):\n"
+    '{\n'
+    '  "intro_phrase": "<punchy 6-8 word question or statement in __LANG__, e.g. What does Heaven really look like?>",\n'
+    '  "visuals": [\n'
+    '    {"prompt": "<shot 1 — awe-inspiring wide hero shot of the entire realm>", "duration": 6, "landmark_name": ""},\n'
+    '    {"prompt": "<shot 2 — iconic zone/structure of __TOPIC__ rendered photorealistically>", "duration": 4, "landmark_name": "<area name from mythology in __LANG__, 2-4 words>"},\n'
+    '    {"prompt": "<shot 3 — different iconic zone of __TOPIC__>", "duration": 4, "landmark_name": "<area name in __LANG__, 2-4 words>"},\n'
+    '    {"prompt": "<shot 4 — different iconic zone of __TOPIC__>", "duration": 4, "landmark_name": "<area name in __LANG__, 2-4 words>"},\n'
+    '    {"prompt": "<shot 5 — different iconic zone of __TOPIC__>", "duration": 4, "landmark_name": "<area name in __LANG__, 2-4 words>"},\n'
+    '    {"prompt": "<shot 6 — cinematic closing wide shot of __TOPIC__>", "duration": 4, "landmark_name": "<area name in __LANG__, 2-4 words>"}\n'
+    '  ],\n'
+    '  "vibe": "<music genre that fits this realm — e.g. Orchestral Epic, Dark Ambient, Celestial Ambient, Gregorian Chant, Taiko Drums>"\n'
+    '}\n\n'
+    "Hard rules:\n"
+    "- Exactly 6 shots: shot 1 duration=6, shots 2-6 duration=4\n"
+    "- Each shot MUST use a DIFFERENT camera move+lens AND a DIFFERENT otherworldly atmosphere — no repeats across all 6\n"
+    "- Each Veo prompt MUST open with the canonical visual signature of that mythological area before any photorealistic description\n"
+    "- Each prompt MUST include one depth layer element (foreground parallax)\n"
+    "- landmark_name for shots 2-6 must be iconic named zones from this realm's mythology — NOT generic labels like 'Area 1', 'Zone A'; MAX 4 words\n"
     "- NO faces, no text in scene, no watermarks\n"
     "- intro_phrase and landmark_name values in __LANG__"
 )
@@ -281,12 +356,19 @@ def _parse_response(data: dict) -> dict:
     return result
 
 
-async def generate_brain(topic: str, language: str = "en") -> dict:
+async def generate_brain(topic: str, language: str = "en", topic_type: str = "city_future") -> dict:
+    if topic_type == "fictional_realm":
+        base_prompt = _FICTIONAL_BRAIN_PROMPT
+        veo_guide = _FICTIONAL_VEO_PROMPT_FORMULA
+    else:
+        base_prompt = _BRAIN_PROMPT
+        veo_guide = _VEO_PROMPT_FORMULA
+
     prompt_text = (
-        _BRAIN_PROMPT
+        base_prompt
         .replace("__TOPIC__", topic)
         .replace("__LANG__", language)
-        .replace("__VEO_GUIDE__", _VEO_PROMPT_FORMULA)
+        .replace("__VEO_GUIDE__", veo_guide)
     )
     logger.info(
         "Gemini: using Vertex AI, model=%s, location=%s",

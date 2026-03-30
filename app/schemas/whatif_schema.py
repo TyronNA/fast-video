@@ -31,6 +31,7 @@ class WhatIfRequest(BaseModel):
     model: str = "veo-3.1-fast-generate-preview"
     voice_model: str = "en-US-Neural2-J"
     language: str = "en"
+    topic_type: str = "city_future"  # "city_future" | "fictional_realm"
 
 
 class WhatIfJob(BaseModel):
@@ -38,6 +39,7 @@ class WhatIfJob(BaseModel):
     topic: str
     model: str
     voice_model: str
+    topic_type: str = "city_future"
     status: WhatIfStatus = WhatIfStatus.queued
     current_stage: Optional[str] = None
     stage_percent: int = 0

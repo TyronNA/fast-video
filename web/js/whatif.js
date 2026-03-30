@@ -60,9 +60,10 @@ async function onSubmit(e) {
   const topic = document.getElementById('wiTopic')?.value?.trim();
   if (!topic) return;
 
-  const model = document.getElementById('wiModel')?.value || DEFAULT_WHATIF_MODEL;
-  const voice = document.getElementById('wiVoice')?.value || 'vi-VN-Neural2-D';
-  const lang  = document.getElementById('wiLang')?.value  || 'vi';
+  const model      = document.getElementById('wiModel')?.value || DEFAULT_WHATIF_MODEL;
+  const voice      = document.getElementById('wiVoice')?.value || 'vi-VN-Neural2-D';
+  const lang       = document.getElementById('wiLang')?.value  || 'vi';
+  const topicType  = document.getElementById('wiTopicType')?.value || 'city_future';
 
   _setRunning(true);
   _clearLog();
@@ -74,7 +75,7 @@ async function onSubmit(e) {
     const res = await fetch('/whatif/start', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ topic, model, voice_model: voice, language: lang }),
+      body: JSON.stringify({ topic, model, voice_model: voice, language: lang, topic_type: topicType }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: res.statusText }));

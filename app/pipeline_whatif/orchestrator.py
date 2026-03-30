@@ -28,6 +28,7 @@ def create_job(req: WhatIfRequest) -> WhatIfJob:
         topic=req.topic,
         model=req.model,
         voice_model=req.voice_model,
+        topic_type=req.topic_type,
     )
     _JOBS[job_id] = job
     logger.info("Created WhatIf job %s for topic=%r", job_id, req.topic)
@@ -88,7 +89,7 @@ async def run_pipeline(job_id: str) -> None:
     try:
         # ── Stage 0: Brain ──────────────────────────────────────────────────
         await _push(job, f"🧠 Generating script & prompts for '{job.topic}'...", "brain", 5)
-        job.brain_output = await stage0_brain.run(job.topic, job.voice_model, language="en")
+        job.brain_output = await stage0_brain.run(job.topic, job.voice_model, language="en", topic_type=job.topic_type)
         await _push(job, f"✅ Script ready. Vibe: {job.brain_output.vibe}", "brain", 15)
 
         # ── Stage 1 + 2: Veo clips & TTS in parallel ────────────────────────
