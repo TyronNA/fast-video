@@ -10,11 +10,12 @@ import { renderHistory } from './history.js';
 import { renderSettings, loadSettings, applyTheme } from './settings.js';
 import { initBatch } from './batch.js';
 import { initWhatIf } from './whatif.js';
+import { initTimeline } from './timeline.js';
 import { initDashboard, loadDashboard } from './dashboard.js';
 
 // ── Navigation ─────────────────────────────────────────────────────────────
 
-const VIEWS = ['generate', 'history', 'settings', 'batch', 'whatif', 'dashboard'];
+const VIEWS = ['generate', 'history', 'settings', 'batch', 'whatif', 'timeline', 'dashboard'];
 
 function switchView(target) {
   VIEWS.forEach(v => {
@@ -31,16 +32,20 @@ function switchView(target) {
     btn.classList.toggle('text-gray-400', !active);
   });
 
-  // Toggle right-panel between preview, batch queue, whatif, and dashboard
+  // Toggle right-panel between preview, batch queue, whatif, timeline, and dashboard
   const isWhatIf    = target === 'whatif';
+  const isTimeline  = target === 'timeline';
   const isBatch     = target === 'batch';
   const isDashboard = target === 'dashboard';
-  document.getElementById('normalPreviewPanel')?.classList.toggle('hidden', isBatch || isWhatIf || isDashboard);
-  document.getElementById('normalPreviewPanel')?.classList.toggle('flex', !isBatch && !isWhatIf && !isDashboard);
+  const isNormal    = !isBatch && !isWhatIf && !isTimeline && !isDashboard;
+  document.getElementById('normalPreviewPanel')?.classList.toggle('hidden', !isNormal);
+  document.getElementById('normalPreviewPanel')?.classList.toggle('flex', isNormal);
   document.getElementById('batchQueuePanel')?.classList.toggle('hidden', !isBatch);
   document.getElementById('batchQueuePanel')?.classList.toggle('flex', isBatch);
   document.getElementById('whatifPanel')?.classList.toggle('hidden', !isWhatIf);
   document.getElementById('whatifPanel')?.classList.toggle('flex', isWhatIf);
+  document.getElementById('timelinePanel')?.classList.toggle('hidden', !isTimeline);
+  document.getElementById('timelinePanel')?.classList.toggle('flex', isTimeline);
   document.getElementById('dashboardPanel')?.classList.toggle('hidden', !isDashboard);
   document.getElementById('dashboardPanel')?.classList.toggle('flex', isDashboard);
 
@@ -122,6 +127,7 @@ async function boot() {
     initPriceEstimate();
     initBatch(models);
     initWhatIf(models);
+    initTimeline(models);
     initDashboard();
   } catch (err) {
     badge.innerHTML =
@@ -141,6 +147,11 @@ async function boot() {
   // WhatIf log clear button
   document.getElementById('wiLogClear')?.addEventListener('click', () => {
     document.getElementById('wiLogBody').innerHTML = '';
+  });
+
+  // Timeline log clear button
+  document.getElementById('tlLogClear')?.addEventListener('click', () => {
+    document.getElementById('tlLogBody').innerHTML = '';
   });
 
   // Aspect ratio changes update draft box live

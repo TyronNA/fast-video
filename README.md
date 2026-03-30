@@ -2,9 +2,10 @@
 
 AI video generation service powered by **Google Vertex AI (Veo)**.
 
-Two modes:
+Three pipeline modes:
 - **Single clip** — generate one Veo clip from a prompt (`/generate-one`)
 - **WhatIf Factory** — full YouTube Shorts pipeline: topic → AI-scripted + AI-generated video with voiceover (`/whatif/*`)
+- **Timeline Civilizations** — location name → historical eras video, 6 clips each showing a different era of that place (`/timeline/*`)
 
 ## Project structure
 
@@ -13,30 +14,42 @@ fast-video/
   app/
     main.py                      ← FastAPI app init + router registration
     api/
-      routes.py                  ← POST /generate-one
+      routes.py                  ← POST /generate-one, history, models
       whatif_routes.py           ← POST /whatif/start, GET /whatif/{id}/events, GET /whatif/{id}/result
+      timeline_routes.py         ← POST /timeline/start, GET /timeline/{id}/events, GET /timeline/{id}/result
+      dashboard_routes.py        ← GET /dashboard/stats (cost tracking)
     core/
       config.py                  ← Env var validation (pydantic-settings)
       logger.py                  ← Logging setup
     pipeline_whatif/
-      orchestrator.py            ← Job management & pipeline coordination
+      orchestrator.py            ← WhatIf job management & pipeline coordination
       stage0_brain.py            ← Gemini: topic → script + 6 Veo prompts
       stage1_veo_gen.py          ← Vertex AI Veo: generate 6 video clips (parallel)
       stage2_tts.py              ← Google Cloud TTS: per-clip voiceover (parallel with stage1)
-      stage3_stitch.py           ← ffmpeg: concatenate clips into single timeline
+      stage3_stitch.py           ← ffmpeg: concatenate clips
       stage4_audio_mix.py        ← ffmpeg + pydub: mux voiceover into video
+    pipeline_timeline/
+      orchestrator.py            ← Timeline job management (reuses stages 1-4 from WhatIf)
+      stage0_brain.py            ← Gemini: location → 6 historical era prompts
     services/
       vertex_service.py          ← Vertex AI Veo integration
-      gemini_service.py          ← Vertex AI Gemini integration
+      gemini_service.py          ← Gemini: generate_brain() + generate_timeline_brain()
       tts_service.py             ← Google Cloud TTS integration
       history_service.py         ← SQLite generation history
+      cost_service.py            ← SQLite cost tracking (record_cost, get_stats)
     schemas/
       video_schema.py            ← Single-clip request/response models
-      whatif_schema.py           ← WhatIf job models
+      whatif_schema.py           ← WhatIfJob, BrainOutput, WhatIfStatus
+      timeline_schema.py         ← TimelineRequest (location, language, voice_model, model)
     utils/
       file_utils.py              ← UUID filename + exports directory management
   exports/                       ← Final videos saved here
-  temp/whatif_jobs/              ← Per-job working directories (auto-created)
+  temp/whatif_jobs/              ← WhatIf per-job working directories (auto-created)
+  temp/timeline_jobs/            ← Timeline per-job working directories (auto-created)
+  data/history.db                ← SQLite DB (generation history + cost log)
+  web/                           ← Frontend UI
+    js/dashboard.js              ← Overview tab: cost stats
+    js/timeline.js               ← Timeline tab: job submission + SSE progress
   requirements.txt
   Makefile
 ```
@@ -296,10 +309,59 @@ curl http://localhost:8000/whatif/$JOB/result | jq .output_video
 
 ---
 
+---
+
+## API — Timeline Civilizations
+
+Location name → historical eras video (~20s, 9:16, with voiceover).
+
+Same pipeline as WhatIf — only the Gemini brain prompt differs. Each of the 6 clips depicts a different historical era of the location.
+
+### `POST /timeline/start`
+
+```bash
+curl -X POST http://localhost:8000/timeline/start \
+  -H "Content-Type: application/json" \
+  -d '{"location": "Rome", "language": "en"}'
+```
+
+| Field | Default | Description |
+|---|---|---|
+| `location` | required | Place name (e.g. `"Rome"`, `"Hà Nội"`) |
+| `model` | `veo-3.1-fast-generate-preview` | Veo model variant |
+| `voice_model` | `en-US-Neural2-J` | Google Cloud TTS voice |
+| `language` | `en` | Language for Gemini script |
+
+**Response `202`:** `{"job_id": "...", "status": "queued"}`
+
+### `GET /timeline/{job_id}/events` / `GET /timeline/{job_id}/result`
+
+Identical format to WhatIf endpoints. Output saved as `exports/timeline_{job_id}.mp4`.
+
+---
+
+## API — Dashboard
+
+### `GET /dashboard/stats`
+
+Returns cost stats aggregated by day, model, and job type.
+
+```bash
+curl "http://localhost:8000/dashboard/stats?days=30"
+```
+
+| Param | Default | Description |
+|---|---|---|
+| `days` | `30` | Lookback window (1–365) |
+
+---
+
 ## Output
 
 | Type | Location |
 |---|---|
 | Single clip | `./exports/<uuid>.mp4` |
 | WhatIf video | `./exports/whatif_<job_id>.mp4` |
-| Temp work files | `./temp/whatif_jobs/wi_YYYYMMDD_<job_id>/` |
+| Timeline video | `./exports/timeline_<job_id>.mp4` |
+| WhatIf temp files | `./temp/whatif_jobs/wi_YYYYMMDD_<job_id>/` |
+| Timeline temp files | `./temp/timeline_jobs/tl_YYYYMMDD_<job_id>/` |

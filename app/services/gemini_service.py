@@ -42,6 +42,145 @@ _BRAIN_RESPONSE_SCHEMA = {
 }
 
 
+_TIMELINE_VEO_FORMULA = """\
+Every Veo prompt MUST follow this formula:
+  [UNIQUE CAMERA MOVE + LENS] + [ERA-SPECIFIC VISUAL SIGNATURE of the location] + [PERIOD-ACCURATE ARCHITECTURE & MATERIALS] + [DEPTH LAYER] + [ERA-FITTING ATMOSPHERE] + [QUALITY TAGS]
+
+Camera moves + lens (each shot must use a DIFFERENT one):
+  sweeping aerial drone shot, anamorphic wide lens | slow cinematic dolly forward, shallow depth of field |
+  bird's-eye view slow pan, wide-angle 18mm | low-altitude flyover, telephoto compression |
+  extreme low-angle looking up, wide-angle distortion | slow crane up reveal, anamorphic lens |
+  tracking shot along skyline, 35mm cinematic
+
+Era atmospheres (pick one that matches the historical period — no repeats):
+  ancient: golden morning sun over stone temples, dusty terracotta haze |
+  medieval: cold overcast gray light, crumbling arches, sparse settlements |
+  renaissance/classical: warm afternoon golden hour, marble domes and plazas |
+  industrial: sepia-tinted coal haze, brick towers, steam columns |
+  modern: blue-hour ambient glow, glass towers, dense urban grid |
+  future: neon city bloom, floating platforms, holographic sky
+
+Depth layer (add ONE per prompt — creates foreground parallax):
+  massive stone column in close foreground | ancient arch gate framing the shot |
+  floating transport platform passing close | energy pylon tower in foreground |
+  ruined wall fragment in near foreground | polished glass building edge in foreground
+
+Quality tags (always append to every prompt):
+  cinematic, hyperrealistic, ultra-detailed, 8K, anamorphic, no people, no text, no watermark
+
+CRITICAL — Era Accuracy rule:
+  Each prompt MUST describe what the location physically looked like AT THAT SPECIFIC ERA — its actual architecture, building materials, and urban density from that period.
+  Example ancient: "the seven hills of Rome lined with terracotta rooftops of the early republic, the Forum Romanum an open plaza of limestone columns and wooden market stalls..."
+  Example medieval: "the ruins of the Forum now partially buried under medieval village buildings, a small church rising from crumbled imperial marble..."
+  Example future: "the Colosseum's ancient arches now embedded in a mega-tower of glass and plasma conduits, the Forum transformed into an elevated hyperloop transit hub..."
+  This era accuracy makes each clip look completely different from every other clip.
+"""
+
+_TIMELINE_BRAIN_PROMPT = (
+    'You are a Veo video director creating a "Timeline Civilizations" YouTube Shorts video.\n\n'
+    "Location: __LOCATION__\n\n"
+    "Task: Generate exactly 6 cinematic shots showing __LOCATION__ across different historical eras — "
+    "from ancient past to far future. Each clip is a window into what this place looked (or will look) like at a specific point in time.\n\n"
+    "__VEO_GUIDE__\n"
+    "Shot structure:\n"
+    "- Shot 1 (opening hook): Dramatic wide cinematic reveal of __LOCATION__ TODAY — an iconic overhead view that makes viewers instantly recognize the place. duration=6, landmark_name=\"\"\n"
+    "- Shots 2-6: Choose 5 distinct time periods that span the history of __LOCATION__ (include: 1 deep ancient past, 1 medieval/classical, 1 early modern/renaissance, 1 recent past, 1 far future). "
+    "For each era, show __LOCATION__ as it appeared/will appear at that exact time — accurate to the period's architecture, materials, density, and technology. "
+    "Each clip must look and feel completely different from the others due to era accuracy. duration=4 each.\n\n"
+    "Return ONLY a valid JSON object (no markdown, no explanation):\n"
+    '{\n'
+    '  "intro_phrase": "<punchy 7-9 word hook in __LANG__, e.g. \'Rome — 2500 năm trong 30 giây\'>",\n'
+    '  "visuals": [\n'
+    '    {"prompt": "<shot 1 — cinematic wide reveal of __LOCATION__ today>", "duration": 6, "landmark_name": ""},\n'
+    '    {"prompt": "<shot 2 — __LOCATION__ in deep ancient past>", "duration": 4, "landmark_name": "<era label in __LANG__, e.g. \'500 TCN\' or \'500 BC\'>"},\n'
+    '    {"prompt": "<shot 3 — __LOCATION__ in medieval/classical era>", "duration": 4, "landmark_name": "<era label>"},\n'
+    '    {"prompt": "<shot 4 — __LOCATION__ in early modern era>", "duration": 4, "landmark_name": "<era label>"},\n'
+    '    {"prompt": "<shot 5 — __LOCATION__ in recent past>", "duration": 4, "landmark_name": "<era label>"},\n'
+    '    {"prompt": "<shot 6 — __LOCATION__ far in the future>", "duration": 4, "landmark_name": "<era label, e.g. \'Năm 2500\' or \'Year 2500\'>"}\n'
+    '  ],\n'
+    '  "vibe": "<music genre fitting this historical journey — e.g. Orchestral Epic, Cinematic Score, Taiko Drums>"\n'
+    '}\n\n'
+    "Hard rules:\n"
+    "- Exactly 6 shots: shot 1 duration=6, shots 2-6 duration=4\n"
+    "- Each shot MUST use a DIFFERENT camera move+lens AND a DIFFERENT era atmosphere — no repeats across all 6\n"
+    "- Each Veo prompt MUST open by describing what __LOCATION__ actually looked like AT THAT ERA before any artistic description\n"
+    "- Each prompt MUST include one depth layer element (foreground parallax)\n"
+    "- Eras must span at least 2000 years total — do NOT cluster periods in the same century\n"
+    "- landmark_name for shots 2-6 = concise era label in __LANG__ (e.g. '500 TCN', 'Thế kỷ 11', 'Thế kỷ 15', '1900s', 'Năm 2500')\n"
+    "- NO people, no faces, no text in scene, no watermarks\n"
+    "- intro_phrase and landmark_name values in __LANG__"
+)
+
+
+def _fallback_timeline(location: str) -> dict:
+    return {
+        "intro_phrase": f"{location} — from ancient to future",
+        "visuals": [
+            {
+                "prompt": (
+                    f"Sweeping aerial drone shot, anamorphic wide lens, {location} iconic skyline today, "
+                    "modern architecture and urban grid, blue-hour ambient glow, glass towers, "
+                    "massive structural beam in foreground, cinematic, hyperrealistic, ultra-detailed, 8K, no text, no watermark"
+                ),
+                "duration": 6,
+                "landmark_name": "",
+            },
+            {
+                "prompt": (
+                    f"Bird's-eye view slow pan, wide-angle 18mm, {location} in ancient times, "
+                    "stone temples and terracotta rooftops, dusty limestone plaza with market stalls, "
+                    "golden morning sun over stone temples, ancient arch gate in close foreground, "
+                    "cinematic, hyperrealistic, ultra-detailed, 8K, no text, no watermark"
+                ),
+                "duration": 4,
+                "landmark_name": "Ancient Era",
+            },
+            {
+                "prompt": (
+                    f"Slow cinematic dolly forward, shallow depth of field, {location} in medieval times, "
+                    "crumbling stone walls and sparse wooden settlements, overgrown ancient ruins, "
+                    "cold overcast gray light, ruined wall fragment in near foreground, "
+                    "cinematic, hyperrealistic, ultra-detailed, 8K, no text, no watermark"
+                ),
+                "duration": 4,
+                "landmark_name": "Medieval Era",
+            },
+            {
+                "prompt": (
+                    f"Slow crane up reveal, anamorphic lens, {location} in the renaissance, "
+                    "marble domes and baroque plazas, ornate facades lining broad stone avenues, "
+                    "warm afternoon golden hour, polished marble column in foreground, "
+                    "cinematic, hyperrealistic, ultra-detailed, 8K, no text, no watermark"
+                ),
+                "duration": 4,
+                "landmark_name": "Renaissance",
+            },
+            {
+                "prompt": (
+                    f"Tracking shot along skyline, 35mm cinematic, {location} in the early 1900s, "
+                    "brick and iron industrial buildings, cobblestone streets and tram lines, "
+                    "sepia-tinted coal haze with steam columns, energy pylon tower in foreground, "
+                    "cinematic, hyperrealistic, ultra-detailed, 8K, no text, no watermark"
+                ),
+                "duration": 4,
+                "landmark_name": "1900s",
+            },
+            {
+                "prompt": (
+                    f"Extreme low-angle looking up, wide-angle distortion, {location} in year 2500, "
+                    "mega-towers of glass and plasma conduits rising from ancient foundations, "
+                    "hyperloop transit arches spanning ancient landmarks, neon city bloom and holographic sky, "
+                    "floating transport platform passing close, "
+                    "cinematic, hyperrealistic, ultra-detailed, 8K, no text, no watermark"
+                ),
+                "duration": 4,
+                "landmark_name": "Year 2500",
+            },
+        ],
+        "vibe": "Orchestral Epic",
+    }
+
+
 def _vertex_host(location: str) -> str:
     # Global uses the shared endpoint host, regional locations use {location}-aiplatform.
     if location == "global":
@@ -437,4 +576,81 @@ async def generate_brain(topic: str, language: str = "en", topic_type: str = "ci
             return _salvage_brain_from_text(best_raw_text, topic)
 
     raise RuntimeError("Gemini request loop exited unexpectedly")
+
+
+async def generate_timeline_brain(location: str, language: str = "en") -> dict:
+    prompt_text = (
+        _TIMELINE_BRAIN_PROMPT
+        .replace("__LOCATION__", location)
+        .replace("__LANG__", language)
+        .replace("__VEO_GUIDE__", _TIMELINE_VEO_FORMULA)
+    )
+    logger.info(
+        "Timeline brain: model=%s, location=%s",
+        settings.gemini_model,
+        settings.gemini_location,
+    )
+
+    creds = sa.Credentials.from_service_account_file(
+        settings.vertex_ai_credentials_file,
+        scopes=["https://www.googleapis.com/auth/cloud-platform"],
+    )
+    creds.refresh(GoogleAuthRequest())
+    url = _VERTEX_URL_TPL.format(
+        host=_vertex_host(settings.gemini_location),
+        location=settings.gemini_location,
+        project=settings.gcp_project,
+        model=settings.gemini_model,
+    )
+    headers = {"Authorization": f"Bearer {creds.token}", "Content-Type": "application/json"}
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        last_error: Exception | None = None
+        best_raw_text = ""
+        use_schema = True
+        for attempt in range(1, 4):
+            attempt_prompt = prompt_text
+            if attempt > 1:
+                attempt_prompt += (
+                    "\n\nIMPORTANT: Return strict minified JSON only. "
+                    "Do not include markdown, comments, or trailing text."
+                )
+            try:
+                resp = await client.post(
+                    url,
+                    json=_build_payload(attempt_prompt, use_schema=use_schema),
+                    headers=headers,
+                )
+                resp.raise_for_status()
+            except httpx.HTTPStatusError as exc:
+                status = exc.response.status_code
+                if status == 400 and use_schema:
+                    logger.warning("Gemini rejected responseSchema (timeline); retrying without schema")
+                    use_schema = False
+                    last_error = exc
+                    continue
+                raise
+
+            body = resp.json()
+            raw_text = _extract_raw_text(body)
+            if len(raw_text) > len(best_raw_text):
+                best_raw_text = raw_text
+
+            try:
+                return _parse_response(body)
+            except (JSONDecodeError, ValueError, KeyError, IndexError) as exc:
+                last_error = exc
+                logger.warning("Timeline brain JSON parse failed (attempt %d/3): %s", attempt, exc)
+
+        if last_error is not None:
+            logger.error(
+                "Timeline brain parse failed after retries, using fallback: %s | raw_text_preview=%r",
+                last_error,
+                best_raw_text[:500],
+            )
+            salvaged = _salvage_brain_from_text(best_raw_text, location)
+            if salvaged and salvaged.get("visuals"):
+                return salvaged
+            return _fallback_timeline(location)
+
+    raise RuntimeError("Timeline brain request loop exited unexpectedly")
 
