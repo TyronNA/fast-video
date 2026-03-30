@@ -16,9 +16,13 @@ async def run(job: WhatIfJob, work_dir: Path) -> list[str]:
     # Build per-clip text list — exactly N texts for N clips:
     # clip 0 (overview)     → intro_phrase
     # clip i (i ≥ 1)        → visuals[i].landmark_name
+    def _short_landmark(name: str) -> str:
+        words = name.strip().split()
+        return " ".join(words[:5])
+
     texts: list[str] = []
     for i, v in enumerate(brain.visuals):
-        texts.append(brain.intro_phrase if i == 0 else (v.landmark_name or ""))
+        texts.append(brain.intro_phrase if i == 0 else _short_landmark(v.landmark_name or ""))
 
     async def _tts_clip(i: int, text: str) -> str:
         if not text.strip():

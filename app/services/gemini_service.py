@@ -49,7 +49,7 @@ def _vertex_host(location: str) -> str:
 
 _VEO_PROMPT_FORMULA = """\
 Every Veo prompt MUST follow this formula:
-  [UNIQUE CAMERA MOVE] + [CITY-SPECIFIC FUTURISTIC SUBJECT] + [ATMOSPHERE] + [QUALITY TAGS]
+  [UNIQUE CAMERA MOVE] + [VISUAL ANCHOR of the real landmark] + [FUTURISTIC TRANSFORMATION] + [ATMOSPHERE] + [QUALITY TAGS]
 
 Camera moves (each shot must use a DIFFERENT one):
   sweeping aerial drone shot | slow cinematic dolly forward | bird's-eye view slow pan |
@@ -61,6 +61,12 @@ Atmosphere (each shot must use a DIFFERENT one):
 
 Quality tags (always append to every prompt):
   cinematic, photorealistic, ultra-detailed, 8K, no people, no text, no watermark
+
+CRITICAL — Visual Anchor rule:
+  Each prompt MUST describe the real-world visual signature of that specific landmark FIRST, then transform it.
+  Example: instead of "futuristic Shibuya" → write "the iconic X-shaped pedestrian crossing of Shibuya, now a floating platform of glowing androids..."
+  Example: instead of "futuristic Dragon Bridge Da Nang" → write "the dragon-shaped suspension bridge spanning the Han River, now a colossal bio-mechanical dragon of living metal arching across a neon waterway..."
+  The visual anchor makes each clip look DIFFERENT from each other.
 """
 
 _BRAIN_PROMPT = (
@@ -70,7 +76,7 @@ _BRAIN_PROMPT = (
     "__VEO_GUIDE__\n"
     "Shot structure:\n"
     '- Shot 1 (opening hero): Sweeping wide aerial reveal of the entire futuristic city — establish the scale. duration=6, landmark_name=""\n'
-    "- Shots 2-6: Pick 5 of the most ICONIC and RECOGNIZABLE real-world areas/districts of __TOPIC__ and reimagine each one as a futuristic megacity location. Must be places that actually exist and are famous in __TOPIC__ — specific to THIS city, not generic labels. Each shot reveals a completely different part of the city. duration=4 each.\n\n"
+    "- Shots 2-6: Pick 5 of the most ICONIC and RECOGNIZABLE real-world landmarks/areas of __TOPIC__ and reimagine each one. Must be places that actually exist and are famous — specific to THIS city, not generic labels. Each prompt MUST start by describing the real-world visual signature of that landmark (its shape, structure, or what makes it recognizable), then transform it into a futuristic version. This is the most important rule: each clip must look VISUALLY DIFFERENT from every other clip. duration=4 each.\n\n"
     "Return ONLY a valid JSON object (no markdown, no explanation):\n"
     '{\n'
     '  "intro_phrase": "<punchy 6-8 word question in __LANG__, e.g. What would Tokyo look like in 3000?>",\n'
@@ -88,8 +94,9 @@ _BRAIN_PROMPT = (
     "Hard rules:\n"
     "- Exactly 6 shots: shot 1 duration=6, shots 2-6 duration=4\n"
     "- Each shot MUST use a DIFFERENT camera move AND a DIFFERENT atmosphere — no repeats across all 6\n"
-    "- landmark_name for shots 2-6 MUST be real, recognizable place names that exist in __TOPIC__ — NOT generic labels like 'City Center', 'Old Quarter', 'Central District'\n"
-    "- NO historical monuments, temples, ruins, war memorials — futuristic transformation only\n"
+    "- Each Veo prompt MUST open with the real-world visual signature of that landmark before any futuristic description — this is what makes each clip look unique\n"
+    "- landmark_name for shots 2-6 MUST be real, recognizable place names that exist in __TOPIC__ — NOT generic labels like 'City Center', 'Old Quarter', 'Central District', 'Business District', 'Waterfront', 'Transit Hub'; MAX 4 words\n"
+    "- Prefer bridges, beaches, hills, specific roads, monuments, stadiums over vague districts\n"
     "- NO faces, no text in scene, no watermarks\n"
     "- intro_phrase and landmark_name values in __LANG__"
 )
@@ -98,7 +105,7 @@ _BRAIN_PROMPT = (
 def _build_payload(prompt_text: str, use_schema: bool = True) -> dict:
     generation_config = {
         "temperature": 0.5,
-        "maxOutputTokens": 1536,
+        "maxOutputTokens": 8000,
         "responseMimeType": "application/json",
     }
     if use_schema:
@@ -164,7 +171,7 @@ def _fallback_brain(topic: str, language: str) -> dict:
                     "cinematic, photorealistic, ultra-detailed, 8K, no text, no watermark"
                 ),
                 "duration": 4,
-                "landmark_name": f"{topic} Business District",
+                "landmark_name": "Business District",
             },
             {
                 "prompt": (
@@ -173,7 +180,7 @@ def _fallback_brain(topic: str, language: str) -> dict:
                     "cinematic, photorealistic, ultra-detailed, 8K, no text, no watermark"
                 ),
                 "duration": 4,
-                "landmark_name": f"{topic} Waterfront",
+                "landmark_name": "Waterfront",
             },
             {
                 "prompt": (
@@ -182,7 +189,7 @@ def _fallback_brain(topic: str, language: str) -> dict:
                     "cinematic, photorealistic, ultra-detailed, 8K, no text, no watermark"
                 ),
                 "duration": 4,
-                "landmark_name": f"{topic} Transit Hub",
+                "landmark_name": "Transit Hub",
             },
             {
                 "prompt": (
@@ -191,7 +198,7 @@ def _fallback_brain(topic: str, language: str) -> dict:
                     "cinematic, photorealistic, ultra-detailed, 8K, no text, no watermark"
                 ),
                 "duration": 4,
-                "landmark_name": f"{topic} Sky District",
+                "landmark_name": "Sky District",
             },
             {
                 "prompt": (
@@ -200,7 +207,7 @@ def _fallback_brain(topic: str, language: str) -> dict:
                     "cinematic, photorealistic, ultra-detailed, 8K, no text, no watermark"
                 ),
                 "duration": 4,
-                "landmark_name": f"{topic} Skyline",
+                "landmark_name": "Skyline",
             },
         ],
         "vibe": "Cyberpunk Phonk",
@@ -307,7 +314,7 @@ async def generate_brain(topic: str, language: str = "en") -> dict:
     headers = {"Authorization": f"Bearer {creds.token}", "Content-Type": "application/json"}
     async with httpx.AsyncClient(timeout=60.0) as client:
         last_error: Exception | None = None
-        last_raw_text = ""
+        best_raw_text = ""  # keep the longest non-empty raw text across all attempts
         use_schema = True
         for attempt in range(1, 4):
             attempt_prompt = prompt_text
@@ -334,7 +341,10 @@ async def generate_brain(topic: str, language: str = "en") -> dict:
                 raise
 
             body = resp.json()
-            last_raw_text = _extract_raw_text(body)
+            raw_text = _extract_raw_text(body)
+            # Keep the longest non-empty raw text — later attempts may return empty
+            if len(raw_text) > len(best_raw_text):
+                best_raw_text = raw_text
 
             try:
                 return _parse_response(body)
@@ -343,8 +353,12 @@ async def generate_brain(topic: str, language: str = "en") -> dict:
                 logger.warning("Gemini JSON parse failed (attempt %d/3): %s", attempt, exc)
 
         if last_error is not None:
-            logger.error("Gemini parse failed after retries, salvaging response: %s", last_error)
-            return _salvage_brain_from_text(last_raw_text, topic, language)
+            logger.error(
+                "Gemini parse failed after retries, salvaging response: %s | raw_text_preview=%r",
+                last_error,
+                best_raw_text[:500],
+            )
+            return _salvage_brain_from_text(best_raw_text, topic, language)
 
     raise RuntimeError("Gemini request loop exited unexpectedly")
 
