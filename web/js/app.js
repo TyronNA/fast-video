@@ -9,10 +9,11 @@ import { initPriceEstimate, handleSubmit } from './form.js';
 import { renderHistory } from './history.js';
 import { renderSettings, loadSettings, applyTheme } from './settings.js';
 import { initBatch } from './batch.js';
+import { initWhatIf } from './whatif.js';
 
 // ── Navigation ─────────────────────────────────────────────────────────────
 
-const VIEWS = ['generate', 'history', 'settings', 'batch'];
+const VIEWS = ['generate', 'history', 'settings', 'batch', 'whatif'];
 
 function switchView(target) {
   VIEWS.forEach(v => {
@@ -29,12 +30,15 @@ function switchView(target) {
     btn.classList.toggle('text-gray-400', !active);
   });
 
-  // Toggle right-panel between preview and batch queue
-  const isBatch = target === 'batch';
-  document.getElementById('normalPreviewPanel')?.classList.toggle('hidden', isBatch);
-  document.getElementById('normalPreviewPanel')?.classList.toggle('flex', !isBatch);
+  // Toggle right-panel between preview, batch queue, and whatif
+  const isWhatIf = target === 'whatif';
+  const isBatch  = target === 'batch';
+  document.getElementById('normalPreviewPanel')?.classList.toggle('hidden', isBatch || isWhatIf);
+  document.getElementById('normalPreviewPanel')?.classList.toggle('flex', !isBatch && !isWhatIf);
   document.getElementById('batchQueuePanel')?.classList.toggle('hidden', !isBatch);
   document.getElementById('batchQueuePanel')?.classList.toggle('flex', isBatch);
+  document.getElementById('whatifPanel')?.classList.toggle('hidden', !isWhatIf);
+  document.getElementById('whatifPanel')?.classList.toggle('flex', isWhatIf);
 
   if (target === 'history') loadHistoryView();
   if (target === 'settings') renderSettings();
@@ -112,6 +116,7 @@ async function boot() {
     initModels(models, default_model);
     initPriceEstimate();
     initBatch(models);
+    initWhatIf(models);
   } catch (err) {
     badge.innerHTML =
       `<span class="w-2 h-2 rounded-full bg-red-500 inline-block"></span> error`;
@@ -125,6 +130,11 @@ async function boot() {
   // Gen log clear button
   document.getElementById('genLogClear')?.addEventListener('click', () => {
     document.getElementById('genLogBody').innerHTML = '';
+  });
+
+  // WhatIf log clear button
+  document.getElementById('wiLogClear')?.addEventListener('click', () => {
+    document.getElementById('wiLogBody').innerHTML = '';
   });
 
   // Aspect ratio changes update draft box live

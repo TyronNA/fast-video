@@ -7,6 +7,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import router
+from app.api.whatif_routes import router as whatif_router
 from app.core.logger import setup_logging
 from app.services.history_service import init_db as init_history_db
 from app.services.vertex_service import init_vertex
@@ -32,6 +33,7 @@ app = FastAPI(
 )
 
 app.include_router(router)
+app.include_router(whatif_router)
 
 # Static assets — must be mounted AFTER API routes to avoid shadowing them.
 _EXPORTS_DIR.mkdir(parents=True, exist_ok=True)
