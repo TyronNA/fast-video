@@ -25,8 +25,8 @@ _BRAIN_RESPONSE_SCHEMA = {
         "intro_phrase": {"type": "STRING"},
         "visuals": {
             "type": "ARRAY",
-            "minItems": 5,
-            "maxItems": 6,
+            "minItems": 4,
+            "maxItems": 5,
             "items": {
                 "type": "OBJECT",
                 "required": ["prompt", "duration", "landmark_name"],
@@ -46,11 +46,13 @@ _TIMELINE_VEO_FORMULA = """\
 Every Veo prompt MUST follow this formula:
   [UNIQUE CAMERA MOVE + LENS] + [ERA-SPECIFIC VISUAL SIGNATURE of the location] + [PERIOD-ACCURATE ARCHITECTURE & MATERIALS] + [DEPTH LAYER] + [ERA-FITTING ATMOSPHERE] + [QUALITY TAGS]
 
-Camera moves + lens (each shot must use a DIFFERENT one):
-  sweeping aerial drone shot, anamorphic wide lens | slow cinematic dolly forward, shallow depth of field |
-  bird's-eye view slow pan, wide-angle 18mm | low-altitude flyover, telephoto compression |
-  extreme low-angle looking up, wide-angle distortion | slow crane up reveal, anamorphic lens |
-  tracking shot along skyline, 35mm cinematic
+Camera moves + lens (each shot must use a DIFFERENT one — ALL must have visible, dynamic motion — NO static or locked-off shots):
+  fast sweeping aerial drone shot, ultra-wide anamorphic 14mm | rapid cinematic push-in, shallow depth of field, wide angle |
+  fast bird's-eye pan across the horizon, ultra wide-angle 14mm | dynamic low-altitude flyover, telephoto compression |
+  extreme low-angle sweeping upward pan, wide-angle distortion | fast crane up reveal, anamorphic wide lens |
+  fast tracking shot along skyline, 35mm cinematic
+
+CRITICAL — Camera Motion rule: Every shot MUST have pronounced, fast camera movement — sweeping pans, rapid fly-throughs, fast cranes. NO still or stationary camera.
 
 Era atmospheres (pick one that matches the historical period — no repeats):
   ancient: golden morning sun over stone temples, dusty terracotta haze |
@@ -79,34 +81,42 @@ CRITICAL — Era Accuracy rule:
 _TIMELINE_BRAIN_PROMPT = (
     'You are a Veo video director creating a "Timeline Civilizations" YouTube Shorts video.\n\n'
     "Location: __LOCATION__\n\n"
-    "Task: Generate exactly 6 cinematic shots showing __LOCATION__ across different historical eras — "
-    "from ancient past to far future. Each clip is a window into what this place looked (or will look) like at a specific point in time.\n\n"
+    "Task: Generate exactly 5 cinematic shots showing __LOCATION__ across radically different historical eras — "
+    "each era must be separated by AT LEAST 300 years from the previous one, so viewers see dramatic visual transformation between every clip.\n\n"
     "__VEO_GUIDE__\n"
-    "Shot structure:\n"
-    "- Shot 1 (opening hook): Dramatic wide cinematic reveal of __LOCATION__ TODAY — an iconic overhead view that makes viewers instantly recognize the place. duration=6, landmark_name=\"\"\n"
-    "- Shots 2-6: Choose 5 distinct time periods that span the history of __LOCATION__ (include: 1 deep ancient past, 1 medieval/classical, 1 early modern/renaissance, 1 recent past, 1 far future). "
-    "For each era, show __LOCATION__ as it appeared/will appear at that exact time — accurate to the period's architecture, materials, density, and technology. "
-    "Each clip must look and feel completely different from the others due to era accuracy. duration=4 each.\n\n"
+    "Shot structure — use EXACTLY these 5 era slots in chronological order:\n"
+    "- Shot 1 (opening hook): __LOCATION__ TODAY (present day) — fast sweeping wide aerial overhead shot. duration=4, landmark_name=\"\"\n"
+    "- Shot 2 (deep ancient): __LOCATION__ in its EARLIEST historical era — pick the most ancient period relevant to this location (e.g. 3000 BC, 500 BC, 100 AD — choose one specific year). "
+    "Show raw ancient architecture: stone, mud-brick, primitive settlements, open wilderness. landmark_name = specific year in __LANG__ (e.g. '500 TCN', '100 AD'). duration=4\n"
+    "- Shot 3 (medieval/classical): __LOCATION__ roughly 300–600 years AFTER shot 2 — pick the medieval, classical, or early imperial era of this specific location. "
+    "Architecture transitions: wooden towers, walled fortifications, early market squares. landmark_name = specific century in __LANG__ (e.g. 'Thế kỷ 8', 'Century 12'). duration=4\n"
+    "- Shot 4 (early modern): __LOCATION__ roughly 400–700 years AFTER shot 3 — pick the colonial, renaissance, or early industrial era. "
+    "Architecture: brick buildings, early roads, docks or trade posts. This era must be NO LATER than 1800 AD. landmark_name = specific decade in __LANG__ (e.g. '1650s', 'Thập niên 1720'). duration=4\n"
+    "- Shot 5 (far future): __LOCATION__ at least 500 years FROM NOW — minimum year 2500 AD. "
+    "Architecture: mega-towers, floating platforms, holographic structures, plasma conduits. landmark_name = specific far future year in __LANG__ (e.g. 'Năm 2500', 'Year 2800'). duration=4\n\n"
+    "CRITICAL ERA SPACING RULE: Calculate the year gaps between shots 2→3→4→5. Each gap MUST be at least 300 years. "
+    "If a gap is under 300 years, pick a different year. Write the chosen years in the landmark_name so they are clearly visible.\n\n"
     "Return ONLY a valid JSON object (no markdown, no explanation):\n"
     '{\n'
-    '  "intro_phrase": "<punchy 7-9 word hook in __LANG__, e.g. \'Rome — 2500 năm trong 30 giây\'>",\n'
+    '  "intro_phrase": "<punchy 7-9 word hook in __LANG__, e.g. \'Rome — 2500 năm trong 20 giây\'>",\n'
     '  "visuals": [\n'
-    '    {"prompt": "<shot 1 — cinematic wide reveal of __LOCATION__ today>", "duration": 6, "landmark_name": ""},\n'
-    '    {"prompt": "<shot 2 — __LOCATION__ in deep ancient past>", "duration": 4, "landmark_name": "<era label in __LANG__, e.g. \'500 TCN\' or \'500 BC\'>"},\n'
-    '    {"prompt": "<shot 3 — __LOCATION__ in medieval/classical era>", "duration": 4, "landmark_name": "<era label>"},\n'
-    '    {"prompt": "<shot 4 — __LOCATION__ in early modern era>", "duration": 4, "landmark_name": "<era label>"},\n'
-    '    {"prompt": "<shot 5 — __LOCATION__ in recent past>", "duration": 4, "landmark_name": "<era label>"},\n'
-    '    {"prompt": "<shot 6 — __LOCATION__ far in the future>", "duration": 4, "landmark_name": "<era label, e.g. \'Năm 2500\' or \'Year 2500\'>"}\n'
+    '    {"prompt": "<shot 1 — fast sweeping wide aerial reveal of __LOCATION__ today>", "duration": 4, "landmark_name": ""},\n'
+    '    {"prompt": "<shot 2 — __LOCATION__ in deep ancient era, exact year chosen>", "duration": 4, "landmark_name": "<specific year in __LANG__>"},\n'
+    '    {"prompt": "<shot 3 — __LOCATION__ in medieval/classical era, at least 300 years after shot 2>", "duration": 4, "landmark_name": "<specific century in __LANG__>"},\n'
+    '    {"prompt": "<shot 4 — __LOCATION__ in early modern era, at least 300 years after shot 3, max 1800 AD>", "duration": 4, "landmark_name": "<specific decade in __LANG__>"},\n'
+    '    {"prompt": "<shot 5 — __LOCATION__ in far future, minimum year 2500>", "duration": 4, "landmark_name": "<far future year in __LANG__>"}\n'
     '  ],\n'
     '  "vibe": "<music genre fitting this historical journey — e.g. Orchestral Epic, Cinematic Score, Taiko Drums>"\n'
     '}\n\n'
     "Hard rules:\n"
-    "- Exactly 6 shots: shot 1 duration=6, shots 2-6 duration=4\n"
-    "- Each shot MUST use a DIFFERENT camera move+lens AND a DIFFERENT era atmosphere — no repeats across all 6\n"
-    "- Each Veo prompt MUST open by describing what __LOCATION__ actually looked like AT THAT ERA before any artistic description\n"
+    "- Exactly 5 shots: all duration=4, in chronological order (today → ancient → medieval → early modern → far future)\n"
+    "- Each shot MUST use a DIFFERENT camera move+lens AND a DIFFERENT era atmosphere — no repeats across all 5\n"
+    "- Every camera move MUST be fast and dynamic — sweeping pans, rapid fly-throughs, fast crane reveals — NO slow or static shots\n"
+    "- Each Veo prompt MUST open by describing what __LOCATION__ actually looked like AT THAT ERA (architecture, materials, density) before any artistic description\n"
     "- Each prompt MUST include one depth layer element (foreground parallax)\n"
-    "- Eras must span at least 2000 years total — do NOT cluster periods in the same century\n"
-    "- landmark_name for shots 2-6 = concise era label in __LANG__ (e.g. '500 TCN', 'Thế kỷ 11', 'Thế kỷ 15', '1900s', 'Năm 2500')\n"
+    "- MINIMUM 300-year gap between shots 2, 3, and 4 — absolutely no two adjacent historical shots within the same century\n"
+    "- Shot 4 must be pre-1800 AD; shot 5 must be 2500 AD or later\n"
+    "- landmark_name for shots 2-5 = specific year/decade/century in __LANG__ — NO vague labels like 'Ancient Era' or 'Medieval'\n"
     "- NO people, no faces, no text in scene, no watermarks\n"
     "- intro_phrase and landmark_name values in __LANG__"
 )
@@ -118,16 +128,16 @@ def _fallback_timeline(location: str) -> dict:
         "visuals": [
             {
                 "prompt": (
-                    f"Sweeping aerial drone shot, anamorphic wide lens, {location} iconic skyline today, "
-                    "modern architecture and urban grid, blue-hour ambient glow, glass towers, "
+                    f"Fast sweeping aerial drone shot, ultra-wide anamorphic 14mm, {location} iconic skyline today, "
+                    "modern architecture and urban grid, rapid pan across the horizon, blue-hour ambient glow, glass towers, "
                     "massive structural beam in foreground, cinematic, hyperrealistic, ultra-detailed, 8K, no text, no watermark"
                 ),
-                "duration": 6,
+                "duration": 4,
                 "landmark_name": "",
             },
             {
                 "prompt": (
-                    f"Bird's-eye view slow pan, wide-angle 18mm, {location} in ancient times, "
+                    f"Fast bird's-eye pan across the horizon, ultra wide-angle 14mm, {location} in ancient times, "
                     "stone temples and terracotta rooftops, dusty limestone plaza with market stalls, "
                     "golden morning sun over stone temples, ancient arch gate in close foreground, "
                     "cinematic, hyperrealistic, ultra-detailed, 8K, no text, no watermark"
@@ -137,7 +147,7 @@ def _fallback_timeline(location: str) -> dict:
             },
             {
                 "prompt": (
-                    f"Slow cinematic dolly forward, shallow depth of field, {location} in medieval times, "
+                    f"Rapid cinematic push-in, shallow depth of field, wide angle, {location} in medieval times, "
                     "crumbling stone walls and sparse wooden settlements, overgrown ancient ruins, "
                     "cold overcast gray light, ruined wall fragment in near foreground, "
                     "cinematic, hyperrealistic, ultra-detailed, 8K, no text, no watermark"
@@ -147,17 +157,7 @@ def _fallback_timeline(location: str) -> dict:
             },
             {
                 "prompt": (
-                    f"Slow crane up reveal, anamorphic lens, {location} in the renaissance, "
-                    "marble domes and baroque plazas, ornate facades lining broad stone avenues, "
-                    "warm afternoon golden hour, polished marble column in foreground, "
-                    "cinematic, hyperrealistic, ultra-detailed, 8K, no text, no watermark"
-                ),
-                "duration": 4,
-                "landmark_name": "Renaissance",
-            },
-            {
-                "prompt": (
-                    f"Tracking shot along skyline, 35mm cinematic, {location} in the early 1900s, "
+                    f"Fast tracking shot along skyline, 35mm cinematic, {location} in the early 1900s, "
                     "brick and iron industrial buildings, cobblestone streets and tram lines, "
                     "sepia-tinted coal haze with steam columns, energy pylon tower in foreground, "
                     "cinematic, hyperrealistic, ultra-detailed, 8K, no text, no watermark"
@@ -167,7 +167,7 @@ def _fallback_timeline(location: str) -> dict:
             },
             {
                 "prompt": (
-                    f"Extreme low-angle looking up, wide-angle distortion, {location} in year 2500, "
+                    f"Extreme low-angle sweeping upward pan, wide-angle distortion, {location} in year 2500, "
                     "mega-towers of glass and plasma conduits rising from ancient foundations, "
                     "hyperloop transit arches spanning ancient landmarks, neon city bloom and holographic sky, "
                     "floating transport platform passing close, "
@@ -192,11 +192,13 @@ _VEO_PROMPT_FORMULA = """\
 Every Veo prompt MUST follow this formula:
   [UNIQUE CAMERA MOVE + LENS] + [VISUAL ANCHOR of the real landmark] + [FUTURISTIC TRANSFORMATION] + [DEPTH LAYER] + [ATMOSPHERE] + [QUALITY TAGS]
 
-Camera moves + lens (each shot must use a DIFFERENT one):
-  sweeping aerial drone shot, anamorphic wide lens | slow cinematic dolly forward, shallow depth of field |
-  bird's-eye view slow pan, wide-angle 18mm | low-altitude flyover, telephoto compression |
-  extreme low-angle looking up, wide-angle distortion | slow crane up reveal, anamorphic lens |
-  tracking shot along skyline, 35mm cinematic
+Camera moves + lens (each shot must use a DIFFERENT one — ALL must have fast, visible motion — NO static or locked-off shots):
+  fast sweeping aerial drone shot, ultra-wide anamorphic 14mm | rapid cinematic push-in, shallow depth of field, wide angle |
+  fast bird's-eye pan across the horizon, ultra wide-angle 14mm | dynamic low-altitude flyover, telephoto compression |
+  extreme low-angle sweeping upward pan, wide-angle distortion | fast crane up reveal, anamorphic wide lens |
+  fast tracking shot along skyline, 35mm cinematic
+
+CRITICAL — Camera Motion rule: Every shot MUST have fast, dynamic camera movement — sweeping pans, rapid fly-throughs, fast crane reveals. NO still or stationary camera.
 
 Atmosphere (each shot must use a DIFFERENT one):
   blue-hour ambient glow, volumetric light shafts | golden-hour cinematic lighting, lens flare |
@@ -221,11 +223,13 @@ _FICTIONAL_VEO_PROMPT_FORMULA = """\
 Every Veo prompt MUST follow this formula:
   [UNIQUE CAMERA MOVE + LENS] + [REALM AREA SIGNATURE] + [SUPERNATURAL/ALIEN SPECTACLE] + [DEPTH LAYER] + [OTHERWORLDLY ATMOSPHERE] + [QUALITY TAGS]
 
-Camera moves + lens (each shot must use a DIFFERENT one):
-  sweeping aerial drone shot, anamorphic wide lens | slow cinematic dolly forward, shallow depth of field |
-  bird's-eye view slow pan, wide-angle 18mm | low-altitude flyover, telephoto compression |
-  extreme low-angle looking up, wide-angle distortion | slow crane up reveal, anamorphic lens |
-  tracking shot, 35mm cinematic
+Camera moves + lens (each shot must use a DIFFERENT one — ALL must have fast, visible motion — NO static or locked-off shots):
+  fast sweeping aerial drone shot, ultra-wide anamorphic 14mm | rapid cinematic push-in, shallow depth of field, wide angle |
+  fast bird's-eye pan across the horizon, ultra wide-angle 14mm | dynamic low-altitude flyover, telephoto compression |
+  extreme low-angle sweeping upward pan, wide-angle distortion | fast crane up reveal, anamorphic wide lens |
+  fast tracking shot, 35mm cinematic
+
+CRITICAL — Camera Motion rule: Every shot MUST have fast, dynamic camera movement — sweeping pans, rapid fly-throughs, fast crane reveals. NO still or stationary camera.
 
 Otherworldly atmosphere (each shot must use a DIFFERENT one — must feel alien/divine/supernatural):
   iridescent aurora-filled sky with twin moons | ethereal golden divine radiance, floating mist |
@@ -251,30 +255,30 @@ CRITICAL — Realm Signature rule:
 _BRAIN_PROMPT = (
     'You are a Veo video director creating a futuristic "What If" YouTube Shorts video.\n\n'
     "Topic: __TOPIC__\n\n"
-    "Task: Generate exactly 6 cinematic shots for a 24-28 second vertical Shorts video imagining __TOPIC__ transformed far into the future.\n\n"
+    "Task: Generate exactly 5 cinematic shots for a 18-20 second vertical Shorts video imagining __TOPIC__ transformed far into the future.\n\n"
     "__VEO_GUIDE__\n"
     "Shot structure:\n"
-    '- Shot 1 (opening hero): Awe-inspiring wide aerial reveal of the entire futuristic city — jaw-dropping scale, impossible megastructures filling the frame. duration=6, landmark_name=""\n'
-    "- Shots 2-6: Pick 5 of the most ICONIC and RECOGNIZABLE real-world landmarks/areas of __TOPIC__ and reimagine each one. Must be places that actually exist and are famous — specific to THIS city, not generic labels. Each prompt MUST start by describing the real-world visual signature of that landmark (its shape, structure, or what makes it recognizable), then transform it into a futuristic version with specific sci-fi tech (plasma conduits, anti-gravity platforms, bioluminescent crystal, neural interface towers, etc.). Each clip must look VISUALLY DIFFERENT from every other clip. duration=4 each.\n\n"
+    '- Shot 1 (opening hero): Awe-inspiring fast sweeping wide aerial reveal of the entire futuristic city — jaw-dropping scale, impossible megastructures filling the frame. duration=4, landmark_name=""\n'
+    "- Shots 2-5: Pick 4 of the most ICONIC and RECOGNIZABLE real-world landmarks/areas of __TOPIC__ and reimagine each one. Must be places that actually exist and are famous — specific to THIS city, not generic labels. Each prompt MUST start by describing the real-world visual signature of that landmark (its shape, structure, or what makes it recognizable), then transform it into a futuristic version with specific sci-fi tech (plasma conduits, anti-gravity platforms, bioluminescent crystal, neural interface towers, etc.). Each clip must look VISUALLY DIFFERENT from every other clip. duration=4 each.\n\n"
     "Return ONLY a valid JSON object (no markdown, no explanation):\n"
     '{\n'
     '  "intro_phrase": "<punchy 6-8 word question in __LANG__, e.g. What would Tokyo look like in 3000?>",\n'
     '  "visuals": [\n'
-    '    {"prompt": "<shot 1 — awe-inspiring wide aerial hero shot>", "duration": 6, "landmark_name": ""},\n'
+    '    {"prompt": "<shot 1 — awe-inspiring fast sweeping wide aerial hero shot>", "duration": 4, "landmark_name": ""},\n'
     '    {"prompt": "<shot 2 — iconic landmark of __TOPIC__ reimagined with specific sci-fi transformation>", "duration": 4, "landmark_name": "<real area name in __LANG__, 2-4 words>"},\n'
     '    {"prompt": "<shot 3 — different iconic landmark of __TOPIC__ reimagined>", "duration": 4, "landmark_name": "<real area name in __LANG__, 2-4 words>"},\n'
     '    {"prompt": "<shot 4 — different iconic landmark of __TOPIC__ reimagined>", "duration": 4, "landmark_name": "<real area name in __LANG__, 2-4 words>"},\n'
-    '    {"prompt": "<shot 5 — different iconic landmark of __TOPIC__ reimagined>", "duration": 4, "landmark_name": "<real area name in __LANG__, 2-4 words>"},\n'
-    '    {"prompt": "<shot 6 — cinematic closing wide shot, different landmark>", "duration": 4, "landmark_name": "<real area name in __LANG__, 2-4 words>"}\n'
+    '    {"prompt": "<shot 5 — cinematic closing wide shot, different landmark>", "duration": 4, "landmark_name": "<real area name in __LANG__, 2-4 words>"}\n'
     '  ],\n'
     '  "vibe": "<music genre that fits this city\'s futuristic vibe>"\n'
     '}\n\n'
     "Hard rules:\n"
-    "- Exactly 6 shots: shot 1 duration=6, shots 2-6 duration=4\n"
-    "- Each shot MUST use a DIFFERENT camera move+lens AND a DIFFERENT atmosphere — no repeats across all 6\n"
+    "- Exactly 5 shots: all duration=4\n"
+    "- Each shot MUST use a DIFFERENT camera move+lens AND a DIFFERENT atmosphere — no repeats across all 5\n"
+    "- Every camera move MUST be fast and dynamic — sweeping pans, rapid fly-throughs, fast crane reveals — NO slow or static shots\n"
     "- Each Veo prompt MUST open with the real-world visual signature of that landmark before any futuristic description — this is what makes each clip look unique\n"
     "- Each prompt MUST include one depth layer element (foreground parallax)\n"
-    "- landmark_name for shots 2-6 MUST be real, recognizable place names that exist in __TOPIC__ — NOT generic labels like 'City Center', 'Old Quarter', 'Central District', 'Business District', 'Waterfront', 'Transit Hub'; MAX 4 words\n"
+    "- landmark_name for shots 2-5 MUST be real, recognizable place names that exist in __TOPIC__ — NOT generic labels like 'City Center', 'Old Quarter', 'Central District', 'Business District', 'Waterfront', 'Transit Hub'; MAX 4 words\n"
     "- Prefer bridges, beaches, hills, specific roads, monuments, stadiums over vague districts\n"
     "- NO faces, no text in scene, no watermarks\n"
     "- intro_phrase and landmark_name values in __LANG__"
@@ -283,7 +287,7 @@ _BRAIN_PROMPT = (
 _FICTIONAL_BRAIN_PROMPT = (
     'You are a Veo video director creating a mythological/fantastical "What If" YouTube Shorts video.\n\n'
     "Topic: __TOPIC__\n\n"
-    "Task: Generate exactly 6 cinematic shots for a 24-28 second vertical Shorts video rendering __TOPIC__ as a jaw-dropping photorealistic world.\n\n"
+    "Task: Generate exactly 5 cinematic shots for a 18-20 second vertical Shorts video rendering __TOPIC__ as a jaw-dropping photorealistic world.\n\n"
     "__VEO_GUIDE__\n"
     "Realm visual vocabulary — use the appropriate style based on the topic:\n"
     "- Planets (Mars/Sao Hỏa, Moon/Mặt Trăng, Mercury/Sao Thủy, etc.): alien terrain textures, terraforming dome habitats, space-age architecture, alien sky colors, twin moons/gas giant backdrops\n"
@@ -291,27 +295,27 @@ _FICTIONAL_BRAIN_PROMPT = (
     "- Western Mythology (Heaven/Thiên Đàng, Hell/Địa Ngục, Asgard): divine white marble, towering golden gates, volcanic obsidian hellscapes, Norse stone halls with runes, rainbow bridge Bifrost\n"
     "- Cosmic/Abstract: impossible non-Euclidean geometry, living crystalline light, fractal landscapes\n\n"
     "Shot structure:\n"
-    '- Shot 1 (opening hero): Awe-inspiring wide aerial reveal of the entire realm — overwhelming divine/alien scale, impossible beauty or terror. duration=6, landmark_name=""\n'
-    "- Shots 2-6: Pick 5 of the most ICONIC zones, structures, or features of __TOPIC__ from its mythology or cultural lore and render each one. Each prompt MUST start by describing the canonical visual signature of that area (its mythological iconography — what makes it recognizable from stories/art), then visualize it as a stunning photorealistic scene. Each clip must look VISUALLY DIFFERENT. duration=4 each.\n\n"
+    '- Shot 1 (opening hero): Awe-inspiring fast sweeping wide aerial reveal of the entire realm — overwhelming divine/alien scale, impossible beauty or terror. duration=4, landmark_name=""\n'
+    "- Shots 2-5: Pick 4 of the most ICONIC zones, structures, or features of __TOPIC__ from its mythology or cultural lore and render each one. Each prompt MUST start by describing the canonical visual signature of that area (its mythological iconography — what makes it recognizable from stories/art), then visualize it as a stunning photorealistic scene. Each clip must look VISUALLY DIFFERENT. duration=4 each.\n\n"
     "Return ONLY a valid JSON object (no markdown, no explanation):\n"
     '{\n'
     '  "intro_phrase": "<punchy 6-8 word question or statement in __LANG__, e.g. What does Heaven really look like?>",\n'
     '  "visuals": [\n'
-    '    {"prompt": "<shot 1 — awe-inspiring wide hero shot of the entire realm>", "duration": 6, "landmark_name": ""},\n'
+    '    {"prompt": "<shot 1 — awe-inspiring fast sweeping wide hero shot of the entire realm>", "duration": 4, "landmark_name": ""},\n'
     '    {"prompt": "<shot 2 — iconic zone/structure of __TOPIC__ rendered photorealistically>", "duration": 4, "landmark_name": "<area name from mythology in __LANG__, 2-4 words>"},\n'
     '    {"prompt": "<shot 3 — different iconic zone of __TOPIC__>", "duration": 4, "landmark_name": "<area name in __LANG__, 2-4 words>"},\n'
     '    {"prompt": "<shot 4 — different iconic zone of __TOPIC__>", "duration": 4, "landmark_name": "<area name in __LANG__, 2-4 words>"},\n'
-    '    {"prompt": "<shot 5 — different iconic zone of __TOPIC__>", "duration": 4, "landmark_name": "<area name in __LANG__, 2-4 words>"},\n'
-    '    {"prompt": "<shot 6 — cinematic closing wide shot of __TOPIC__>", "duration": 4, "landmark_name": "<area name in __LANG__, 2-4 words>"}\n'
+    '    {"prompt": "<shot 5 — cinematic closing wide shot of __TOPIC__>", "duration": 4, "landmark_name": "<area name in __LANG__, 2-4 words>"}\n'
     '  ],\n'
     '  "vibe": "<music genre that fits this realm — e.g. Orchestral Epic, Dark Ambient, Celestial Ambient, Gregorian Chant, Taiko Drums>"\n'
     '}\n\n'
     "Hard rules:\n"
-    "- Exactly 6 shots: shot 1 duration=6, shots 2-6 duration=4\n"
-    "- Each shot MUST use a DIFFERENT camera move+lens AND a DIFFERENT otherworldly atmosphere — no repeats across all 6\n"
+    "- Exactly 5 shots: all duration=4\n"
+    "- Each shot MUST use a DIFFERENT camera move+lens AND a DIFFERENT otherworldly atmosphere — no repeats across all 5\n"
+    "- Every camera move MUST be fast and dynamic — sweeping pans, rapid fly-throughs, fast crane reveals — NO slow or static shots\n"
     "- Each Veo prompt MUST open with the canonical visual signature of that mythological area before any photorealistic description\n"
     "- Each prompt MUST include one depth layer element (foreground parallax)\n"
-    "- landmark_name for shots 2-6 must be iconic named zones from this realm's mythology — NOT generic labels like 'Area 1', 'Zone A'; MAX 4 words\n"
+    "- landmark_name for shots 2-5 must be iconic named zones from this realm's mythology — NOT generic labels like 'Area 1', 'Zone A'; MAX 4 words\n"
     "- NO faces, no text in scene, no watermarks\n"
     "- intro_phrase and landmark_name values in __LANG__"
 )
@@ -373,15 +377,16 @@ def _fallback_brain(topic: str) -> dict:
         "visuals": [
             {
                 "prompt": (
-                    f"Sweeping aerial drone shot, futuristic {topic} megacity skyline, glass mega-towers, "
-                    "flying vehicles, blue-hour ambient glow, cinematic, photorealistic, ultra-detailed, 8K, no text, no watermark"
+                    f"Fast sweeping aerial drone shot, ultra-wide anamorphic 14mm, futuristic {topic} megacity skyline, "
+                    "glass mega-towers, flying vehicles, rapid pan across the horizon, blue-hour ambient glow, "
+                    "cinematic, photorealistic, ultra-detailed, 8K, no text, no watermark"
                 ),
-                "duration": 6,
+                "duration": 4,
                 "landmark_name": "",
             },
             {
                 "prompt": (
-                    f"Slow cinematic dolly forward, futuristic commercial district of {topic}, "
+                    f"Rapid cinematic push-in, wide angle, futuristic commercial district of {topic}, "
                     "holographic billboards, elevated sky-bridges, golden-hour cinematic lighting, "
                     "cinematic, photorealistic, ultra-detailed, 8K, no text, no watermark"
                 ),
@@ -390,7 +395,7 @@ def _fallback_brain(topic: str) -> dict:
             },
             {
                 "prompt": (
-                    f"Bird's-eye view slow pan, futuristic waterfront of {topic}, "
+                    f"Fast bird's-eye pan across the horizon, ultra wide-angle 14mm, futuristic waterfront of {topic}, "
                     "glowing skyline reflections, flying taxis, night city neon bloom, "
                     "cinematic, photorealistic, ultra-detailed, 8K, no text, no watermark"
                 ),
@@ -399,7 +404,7 @@ def _fallback_brain(topic: str) -> dict:
             },
             {
                 "prompt": (
-                    f"Low-altitude flyover, futuristic transit hub of {topic}, "
+                    f"Dynamic low-altitude flyover, telephoto compression, futuristic transit hub of {topic}, "
                     "autonomous pods, vertical gardens on towers, dramatic overcast storm light, "
                     "cinematic, photorealistic, ultra-detailed, 8K, no text, no watermark"
                 ),
@@ -408,16 +413,7 @@ def _fallback_brain(topic: str) -> dict:
             },
             {
                 "prompt": (
-                    f"Wide establishing shot, futuristic residential towers of {topic}, "
-                    "rooftop sky-parks, neon-lit walkways, twilight purple sky, "
-                    "cinematic, photorealistic, ultra-detailed, 8K, no text, no watermark"
-                ),
-                "duration": 4,
-                "landmark_name": "Sky District",
-            },
-            {
-                "prompt": (
-                    f"Slow crane up reveal, dramatic wide shot of futuristic {topic} megacity, "
+                    f"Fast crane up reveal, anamorphic wide lens, dramatic wide shot of futuristic {topic} megacity, "
                     "entire skyline, sunrise warm diffused haze, "
                     "cinematic, photorealistic, ultra-detailed, 8K, no text, no watermark"
                 ),
@@ -449,7 +445,7 @@ def _salvage_brain_from_text(raw_text: str, topic: str) -> dict:
 
     if prompts:
         visuals = []
-        for i in range(min(6, len(prompts))):
+        for i in range(min(5, len(prompts))):
             visuals.append(
                 {
                     "prompt": _cleanup_json_string(prompts[i]),
@@ -457,7 +453,7 @@ def _salvage_brain_from_text(raw_text: str, topic: str) -> dict:
                     "landmark_name": _cleanup_json_string(landmarks[i]) if i < len(landmarks) else "",
                 }
             )
-        while len(visuals) < 6:
+        while len(visuals) < 5:
             visuals.append(result["visuals"][len(visuals)])
         result["visuals"] = visuals
 

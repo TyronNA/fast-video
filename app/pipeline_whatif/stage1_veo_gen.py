@@ -10,7 +10,7 @@ import app.services.vertex_service as vertex_service
 logger = get_logger(__name__)
 
 _NEGATIVE_PROMPT = (
-    "blurry, low quality, camera shake, fast zoom, deformed, cartoon, "
+    "blurry, low quality, static shot, locked-off camera, motionless camera, deformed, cartoon, "
     "text overlays, watermark, distorted faces, nsfw"
 )
 
@@ -47,7 +47,8 @@ async def _gen_clip(
     duration = _normalize_duration(duration)
     enhanced = (
         f"{prompt} "
-        "Cinematic, smooth motion, no text, no watermark, hyper-realistic, 8k."
+        "Cinematic, fast dynamic camera movement, sweeping pan, wide epic angle, "
+        "no text, no watermark, hyper-realistic, 8k."
     )
     config = VideoGenerationConfig(
         aspect_ratio="9:16",
