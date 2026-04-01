@@ -42,6 +42,29 @@ _BRAIN_RESPONSE_SCHEMA = {
 }
 
 
+_TIMELINE_BRAIN_RESPONSE_SCHEMA = {
+    "type": "OBJECT",
+    "required": ["intro_phrase", "visuals", "vibe"],
+    "properties": {
+        "intro_phrase": {"type": "STRING"},
+        "visuals": {
+            "type": "ARRAY",
+            "minItems": 5,
+            "maxItems": 5,
+            "items": {
+                "type": "OBJECT",
+                "required": ["prompt", "duration", "landmark_name"],
+                "properties": {
+                    "prompt": {"type": "STRING"},
+                    "duration": {"type": "INTEGER", "enum": [4, 6, 8]},
+                    "landmark_name": {"type": "STRING"},
+                },
+            },
+        },
+        "vibe": {"type": "STRING"},
+    },
+}
+
 _TIMELINE_VEO_FORMULA = """\
 Every Veo prompt MUST follow this formula:
   [UNIQUE CAMERA MOVE + LENS] + [ERA-SPECIFIC VISUAL SIGNATURE of the location] + [PERIOD-ACCURATE ARCHITECTURE & MATERIALS] + [DEPTH LAYER] + [ERA-FITTING ATMOSPHERE] + [QUALITY TAGS]
@@ -90,8 +113,8 @@ _TIMELINE_BRAIN_PROMPT = (
     "Show raw ancient architecture: stone, mud-brick, primitive settlements, open wilderness. landmark_name = specific year in __LANG__ (e.g. '500 TCN', '100 AD'). duration=4\n"
     "- Shot 3 (medieval/classical): __LOCATION__ roughly 300–600 years AFTER shot 2 — pick the medieval, classical, or early imperial era of this specific location. "
     "Architecture transitions: wooden towers, walled fortifications, early market squares. landmark_name = specific century in __LANG__ (e.g. 'Thế kỷ 8', 'Century 12'). duration=4\n"
-    "- Shot 4 (early modern): __LOCATION__ roughly 400–700 years AFTER shot 3 — pick the colonial, renaissance, or early industrial era. "
-    "Architecture: brick buildings, early roads, docks or trade posts. This era must be NO LATER than 1800 AD. landmark_name = specific decade in __LANG__ (e.g. '1650s', 'Thập niên 1720'). duration=4\n"
+    "- Shot 4 (industrial/modern): __LOCATION__ roughly 300–600 years AFTER shot 3 — pick the colonial, industrial, or 20th-century modern era. "
+    "Architecture: iron and brick buildings, tram roads, early urban grid, or mid-century concrete. This era must be between 1800 AD and 1990 AD. landmark_name = specific decade in __LANG__ (e.g. '1920s', 'Thập niên 1960'). duration=4\n"
     "- Shot 5 (far future): __LOCATION__ at least 500 years FROM NOW — minimum year 2500 AD. "
     "Architecture: mega-towers, floating platforms, holographic structures, plasma conduits. landmark_name = specific far future year in __LANG__ (e.g. 'Năm 2500', 'Year 2800'). duration=4\n\n"
     "CRITICAL ERA SPACING RULE: Calculate the year gaps between shots 2→3→4→5. Each gap MUST be at least 300 years. "
@@ -103,19 +126,19 @@ _TIMELINE_BRAIN_PROMPT = (
     '    {"prompt": "<shot 1 — fast sweeping wide aerial reveal of __LOCATION__ today>", "duration": 4, "landmark_name": ""},\n'
     '    {"prompt": "<shot 2 — __LOCATION__ in deep ancient era, exact year chosen>", "duration": 4, "landmark_name": "<specific year in __LANG__>"},\n'
     '    {"prompt": "<shot 3 — __LOCATION__ in medieval/classical era, at least 300 years after shot 2>", "duration": 4, "landmark_name": "<specific century in __LANG__>"},\n'
-    '    {"prompt": "<shot 4 — __LOCATION__ in early modern era, at least 300 years after shot 3, max 1800 AD>", "duration": 4, "landmark_name": "<specific decade in __LANG__>"},\n'
+            {"prompt": "<shot 4 — __LOCATION__ in industrial or modern era, between 1800-1990 AD, at least 300 years after shot 3>", "duration": 4, "landmark_name": "<specific decade in __LANG__>"},\n"
     '    {"prompt": "<shot 5 — __LOCATION__ in far future, minimum year 2500>", "duration": 4, "landmark_name": "<far future year in __LANG__>"}\n'
     '  ],\n'
     '  "vibe": "<music genre fitting this historical journey — e.g. Orchestral Epic, Cinematic Score, Taiko Drums>"\n'
     '}\n\n'
     "Hard rules:\n"
-    "- Exactly 5 shots: all duration=4, in chronological order (today → ancient → medieval → early modern → far future)\n"
+    "- Exactly 5 shots: all duration=4, in order (today → ancient → medieval → industrial/modern → far future)\n"
     "- Each shot MUST use a DIFFERENT camera move+lens AND a DIFFERENT era atmosphere — no repeats across all 5\n"
     "- Every camera move MUST be fast and dynamic — sweeping pans, rapid fly-throughs, fast crane reveals — NO slow or static shots\n"
     "- Each Veo prompt MUST open by describing what __LOCATION__ actually looked like AT THAT ERA (architecture, materials, density) before any artistic description\n"
     "- Each prompt MUST include one depth layer element (foreground parallax)\n"
     "- MINIMUM 300-year gap between shots 2, 3, and 4 — absolutely no two adjacent historical shots within the same century\n"
-    "- Shot 4 must be pre-1800 AD; shot 5 must be 2500 AD or later\n"
+    "- Shot 4 must be between 1800 and 1990 AD; shot 5 must be 2500 AD or later\n"
     "- landmark_name for shots 2-5 = specific year/decade/century in __LANG__ — NO vague labels like 'Ancient Era' or 'Medieval'\n"
     "- NO people, no faces, no text in scene, no watermarks\n"
     "- intro_phrase and landmark_name values in __LANG__"
@@ -143,7 +166,7 @@ def _fallback_timeline(location: str) -> dict:
                     "cinematic, hyperrealistic, ultra-detailed, 8K, no text, no watermark"
                 ),
                 "duration": 4,
-                "landmark_name": "Ancient Era",
+            "landmark_name": "500 BC",
             },
             {
                 "prompt": (
@@ -153,7 +176,7 @@ def _fallback_timeline(location: str) -> dict:
                     "cinematic, hyperrealistic, ultra-detailed, 8K, no text, no watermark"
                 ),
                 "duration": 4,
-                "landmark_name": "Medieval Era",
+            "landmark_name": "1200s",
             },
             {
                 "prompt": (
@@ -163,7 +186,7 @@ def _fallback_timeline(location: str) -> dict:
                     "cinematic, hyperrealistic, ultra-detailed, 8K, no text, no watermark"
                 ),
                 "duration": 4,
-                "landmark_name": "1900s",
+                "landmark_name": "1920s",
             },
             {
                 "prompt": (
@@ -321,14 +344,14 @@ _FICTIONAL_BRAIN_PROMPT = (
 )
 
 
-def _build_payload(prompt_text: str, use_schema: bool = True) -> dict:
+def _build_payload(prompt_text: str, use_schema: bool = True, response_schema: dict | None = None) -> dict:
     generation_config = {
         "temperature": 0.5,
         "maxOutputTokens": 8000,
         "responseMimeType": "application/json",
     }
     if use_schema:
-        generation_config["responseSchema"] = _BRAIN_RESPONSE_SCHEMA
+        generation_config["responseSchema"] = response_schema if response_schema is not None else _BRAIN_RESPONSE_SCHEMA
 
     return {
         "contents": [{"role": "user", "parts": [{"text": prompt_text}]}],
@@ -765,7 +788,7 @@ async def generate_timeline_brain(location: str, language: str = "en") -> dict:
             try:
                 resp = await client.post(
                     url,
-                    json=_build_payload(attempt_prompt, use_schema=use_schema),
+                    json=_build_payload(attempt_prompt, use_schema=use_schema, response_schema=_TIMELINE_BRAIN_RESPONSE_SCHEMA),
                     headers=headers,
                 )
                 resp.raise_for_status()
