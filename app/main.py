@@ -10,9 +10,11 @@ from app.api.routes import router
 from app.api.whatif_routes import router as whatif_router
 from app.api.timeline_routes import router as timeline_router
 from app.api.dashboard_routes import router as dashboard_router
+from app.api.pokemon_routes import router as pokemon_router
 from app.core.logger import setup_logging
 from app.pipeline_whatif.orchestrator import cleanup_old_work_dirs
 from app.pipeline_timeline.orchestrator import cleanup_old_work_dirs as cleanup_timeline_dirs
+from app.pipeline_pokemon.orchestrator import cleanup_old_work_dirs as cleanup_pokemon_dirs
 from app.services.history_service import init_db as init_history_db
 from app.services.cost_service import init_cost_db
 from app.services.vertex_service import init_vertex
@@ -30,6 +32,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     init_vertex()
     cleanup_old_work_dirs()
     cleanup_timeline_dirs()
+    cleanup_pokemon_dirs()
     yield
 
 
@@ -44,6 +47,7 @@ app.include_router(router)
 app.include_router(whatif_router)
 app.include_router(timeline_router)
 app.include_router(dashboard_router)
+app.include_router(pokemon_router)
 
 # Static assets — must be mounted AFTER API routes to avoid shadowing them.
 _EXPORTS_DIR.mkdir(parents=True, exist_ok=True)

@@ -45,6 +45,15 @@
       </svg>
       Timeline
     </button>
+    <button type="button" data-view="pokemon"
+      class="nav-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-400 hover:bg-gray-800 hover:text-gray-200 text-sm transition">
+      <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <circle cx="12" cy="12" r="9" stroke-width="1.8"/>
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3 12h18M12 3a9 9 0 010 18"/>
+        <circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/>
+      </svg>
+      Pokémon
+    </button>
     <button type="button" data-view="generate"
       class="nav-btn w-full flex items-center gap-3 px-3 py-2 rounded-lg text-gray-400 hover:bg-gray-800 hover:text-gray-200 text-sm transition">
       <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4l16 8-16 8V4z"/></svg>
@@ -530,6 +539,74 @@
     </div>
   </div><!-- /view-timeline -->
 
+  <!-- VIEW: Pokémon Cyberpunk Evolution -->
+  <div id="view-pokemon" class="hidden flex-col flex-1 overflow-y-auto">
+    <div class="px-5 py-4 border-b border-gray-800 flex items-center gap-2">
+      <svg class="w-4 h-4 text-yellow-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <circle cx="12" cy="12" r="9"/>
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3 12h18M12 3a9 9 0 010 18"/>
+        <circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/>
+      </svg>
+      <h2 class="text-sm font-semibold text-gray-200">Pokémon Cyberpunk</h2>
+      <span class="ml-auto text-[10px] font-mono text-yellow-400/70 bg-yellow-950/40 px-2 py-0.5 rounded">1 Pokémon × 5 armor stages</span>
+    </div>
+    <div class="px-5 py-5">
+      <form id="pkForm" class="space-y-4" novalidate>
+
+        <div>
+          <label class="block text-xs font-medium text-gray-400 mb-1" for="pkName">Pokémon name</label>
+          <input id="pkName" type="text" maxlength="100" required
+            placeholder="Pikachu, Charizard, Mewtwo, Bulbasaur..."
+            class="w-full rounded-lg bg-gray-800 border border-gray-700 focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 px-3 py-2 text-sm text-gray-100 placeholder-gray-500 outline-none transition" />
+          <p class="mt-1 text-xs text-gray-600">Evolution chain auto-fetched from PokéAPI. Any Pokémon works.</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-400 mb-1" for="pkVoice">Voice</label>
+            <select id="pkVoice" class="w-full rounded-lg bg-gray-800 border border-gray-700 focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 px-3 py-2 text-sm text-gray-100 outline-none transition">
+              <option value="en-US-Neural2-J" selected>EN Neural2-J (Male)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-400 mb-1" for="pkLang">Script language</label>
+            <select id="pkLang" class="w-full rounded-lg bg-gray-800 border border-gray-700 focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 px-3 py-2 text-sm text-gray-100 outline-none transition">
+              <option value="en" selected>🇺🇸 English</option>
+              <option value="vi">🇻🇳 Tiếng Việt</option>
+              <option value="ja">🇯🇵 日本語</option>
+              <option value="ko">🇰🇷 한국어</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-gray-400 mb-1" for="pkModel">Veo model</label>
+          <select id="pkModel" class="w-full rounded-lg bg-gray-800 border border-gray-700 focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500 px-3 py-2 text-sm text-gray-100 outline-none transition">
+            <option value="veo-3.1-fast-generate-preview">Veo 3.1 Fast Preview ($0.40/s)</option>
+          </select>
+          <p id="pkPriceEstimate" class="mt-1 text-xs text-yellow-400/80">Estimated Veo cost: -</p>
+        </div>
+
+        <div class="rounded-lg border border-gray-700/60 bg-gray-800/30 px-3 py-2.5 text-xs text-gray-500 space-y-0.5">
+          <p>⚡ <span class="text-gray-400">PokéAPI</span> → auto-fetch full evolution chain</p>
+          <p>🤖 <span class="text-gray-400">Gemini</span> → 5 cyberpunk armor stage prompts</p>
+          <p>🎬 <span class="text-gray-400">5 × 4s clips</span> — tiny cute → light → medium → heavy → titan</p>
+          <p>🎙️ <span class="text-gray-400">Google Cloud TTS</span> evolution stage narration</p>
+        </div>
+
+        <button type="submit" id="pkSubmitBtn"
+          class="w-full py-2.5 rounded-lg bg-yellow-500 hover:bg-yellow-400 active:scale-[.98] font-semibold text-sm text-gray-900 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+          <svg id="pkSpinIcon" class="hidden w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 100 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z"/>
+          </svg>
+          <span id="pkSubmitLabel">Generate Evolution</span>
+        </button>
+
+      </form>
+    </div>
+  </div><!-- /view-pokemon -->
+
   <!-- VIEW: Dashboard (placeholder — content is in dashboardPanel) -->
   <div id="view-dashboard" class="hidden flex-col flex-1 overflow-y-auto">
     <div class="px-5 py-5">
@@ -823,6 +900,87 @@
   </div>
 
 </div><!-- /timelinePanel -->
+
+<!-- Pokémon preview panel -->
+<div id="pokemonPanel" class="hidden flex-col flex-1 overflow-hidden">
+
+  <!-- Header -->
+  <div class="flex-shrink-0 flex items-center justify-between px-6 py-3 border-b border-gray-800 bg-gray-900/40">
+    <div class="flex items-center gap-2">
+      <svg class="w-4 h-4 text-yellow-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <circle cx="12" cy="12" r="9"/>
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3 12h18M12 3a9 9 0 010 18"/>
+        <circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/>
+      </svg>
+      <span class="text-sm font-medium text-gray-300">Pokémon Evolution Preview</span>
+      <span id="pkDuration" class="text-xs text-yellow-400/70 font-mono"></span>
+    </div>
+    <a id="pkDownloadBtn" href="#" download
+      class="hidden text-xs px-3 py-1.5 rounded-lg border border-gray-700 hover:border-yellow-500 hover:text-yellow-400 transition">
+      Download
+    </a>
+  </div>
+
+  <!-- Main area: 9:16 preview + evolution stages side-by-side -->
+  <div class="flex-1 flex overflow-hidden min-h-0">
+
+    <!-- 9:16 video column -->
+    <div class="flex items-center justify-center p-5" style="flex:0 0 auto">
+      <div style="position:relative;height:calc(100vh - 13rem);aspect-ratio:9/16;max-width:280px"
+        class="rounded-xl border-2 border-dashed border-gray-800 overflow-hidden bg-gray-950 flex-shrink-0">
+        <div id="pkPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center text-gray-700">
+          <svg class="w-10 h-10 mb-2 opacity-25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+            <circle cx="12" cy="12" r="9"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 12h18M12 3a9 9 0 010 18"/>
+            <circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/>
+          </svg>
+          <p class="text-xs font-mono">9:16 Shorts</p>
+        </div>
+        <div id="pkVideoWrap" class="hidden absolute inset-0">
+          <video id="pkResultVideo" controls loop class="w-full h-full object-contain bg-black"></video>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right column: progress + evolution stages + log -->
+    <div class="flex-1 flex flex-col min-w-0 border-l border-gray-800 py-4 px-5 gap-4 overflow-y-auto">
+
+      <!-- Progress bar -->
+      <div id="pkProgressWrap" class="hidden">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-xs text-gray-500 font-mono">Progress</span>
+          <span id="pkProgressPct" class="text-xs text-yellow-400 font-mono">0%</span>
+        </div>
+        <div class="w-full h-1.5 rounded-full bg-gray-800 overflow-hidden">
+          <div id="pkProgressBar" class="h-full rounded-full bg-yellow-400 transition-all duration-300" style="width:0%"></div>
+        </div>
+      </div>
+
+      <!-- Evolution stages card -->
+      <div id="pkEvoWrap" class="hidden rounded-lg border border-yellow-800/40 bg-yellow-950/20 px-4 py-3 space-y-3">
+        <div class="flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 text-yellow-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+          <span class="text-xs font-semibold text-yellow-300">Evolution Stages</span>
+          <span id="pkEvoVibe" class="ml-auto text-[10px] font-mono text-yellow-400/70 bg-yellow-900/30 px-1.5 py-0.5 rounded"></span>
+        </div>
+        <div id="pkEvoList" class="space-y-1.5"></div>
+      </div>
+
+      <!-- Log -->
+      <div class="flex-1 flex flex-col min-h-0">
+        <div class="flex items-center justify-between mb-1">
+          <span class="font-mono text-[10px] tracking-widest text-gray-600 uppercase">// Log</span>
+          <button id="pkLogClear" class="font-mono text-[10px] text-gray-600 hover:text-gray-300 transition">clear</button>
+        </div>
+        <div id="pkLogBody" class="flex-1 overflow-y-auto space-y-0.5 min-h-[8rem] rounded-lg bg-gray-900/60 border border-gray-800 p-3"></div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /pokemonPanel -->
 
 <!-- Dashboard panel -->
 <div id="dashboardPanel" class="hidden flex-col flex-1 overflow-hidden">

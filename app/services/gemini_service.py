@@ -574,6 +574,165 @@ async def generate_brain(topic: str, language: str = "en", topic_type: str = "ci
     raise RuntimeError("Gemini request loop exited unexpectedly")
 
 
+_POKEMON_VEO_FORMULA = """\
+Every Veo prompt MUST follow this formula:
+  [UNIQUE CAMERA MOVE + LENS] + [CREATURE VISUAL DESCRIPTION — color + animal base + signature feature] + [CYBERPUNK ARMOR STAGE] + [ENVIRONMENT] + [ATMOSPHERE] + [QUALITY TAGS]
+
+CRITICAL — Character Name Ban:
+  NEVER use any character name, franchise name, brand name, or game title inside a Veo prompt.
+  Describe the creature ONLY by:
+    1. Primary color (e.g. "vibrant yellow", "flame-orange", "deep blue")
+    2. Animal base (e.g. "bipedal lizard", "quadrupedal turtle mech", "electric rodent drone")
+    3. Signature physical feature (e.g. "plasma thruster tail", "lightning-bolt energy blade tail", "shoulder-mounted hydraulic cannons")
+    4. Material (e.g. "chrome plating", "carbon-fiber joints", "brushed alloy shell")
+  Example: instead of "Pikachu" → write "small vibrant-yellow electric rodent with circular neon-red battery ports on its cheeks and a jagged lightning-blade tail"
+  Example: instead of "Charizard" → write "large flame-orange bipedal reptilian mech with carbon-fiber joints and a blue plasma thruster igniting at its tail tip"
+
+Camera moves (each shot MUST use a DIFFERENT one — ALL have fast visible motion — NO static shots):
+  fast sweeping crane shot pulling back to reveal the full cyberpunk city, ultra-wide anamorphic 14mm |
+  rapid low-angle cinematic push-in toward the creature, wide-angle dramatic distortion |
+  fast orbiting tracking shot circling the creature 360°, 35mm cinematic |
+  extreme low-angle looking up at the towering armored form, fisheye upward tilt |
+  dynamic high-speed lateral tracking shot along a neon-lit street, telephoto compression |
+
+Cyberpunk armor escalation (use the matching level per shot — each shot MUST look visually heavier than the previous):
+  Contrast intro: the creature's original unarmored animal form stands tiny and innocent, dwarfed by a vast neon megacity |
+  Light armor: neon energy lines traced along the body, minimal chrome shoulder plates, glowing LED eyes |
+  Medium armor: reinforced chest plate, energy-conduit gauntlets, plasma propulsion jets on legs |
+  Heavy battle armor: full exosuit with neon orange highlights, integrated plasma cannon on shoulder, battle-scarred metal |
+  Ultimate titan form: colossal mecha version towering over buildings, reactor core blazing in chest, plasma energy wings, city-scale |
+
+Atmosphere (each shot MUST use a DIFFERENT one):
+  neon rain-soaked cyberpunk street at midnight, reflective wet asphalt glow |
+  underground cyberpunk forge interior, molten metal sparks flying, deep orange light |
+  rooftop arena battle platform at night, drone spotlights, electric crowd energy |
+  post-apocalyptic battlefield, smoldering neon ruins, crackling electric storm sky |
+  cyberpunk megacity skyline at blue-hour, towering glass and chrome, holographic ads |
+
+Quality tags (always append): cinematic, hyperrealistic, ultra-detailed, 8K, anamorphic, no people, no faces, no text, no watermark
+"""
+
+_POKEMON_BRAIN_PROMPT = (
+    'You are a Veo video director creating a "Cyberpunk Evolution" YouTube Shorts video.\n\n'
+    "Creature concept: __POKEMON__\n"
+    "Evolution stages: __EVOLUTION_CHAIN__\n\n"
+    "STEP 1 — Derive visual identities (use this internally to write prompts):\n"
+    "Based on your knowledge of the creature concept, define a visual description for each evolution stage:\n"
+    "  - Primary color (e.g. 'vibrant yellow', 'flame-orange', 'deep blue')\n"
+    "  - Animal base (e.g. 'bipedal lizard', 'quadrupedal turtle', 'electric rodent')\n"
+    "  - Signature physical feature (e.g. 'plasma thruster tail', 'lightning-blade tail', 'shoulder hydraulic cannons')\n"
+    "  - Material/texture (e.g. 'chrome plating', 'carbon-fiber joints', 'brushed alloy shell')\n\n"
+    "STEP 2 — Generate exactly 5 cinematic shots showing the creature evolving with progressively heavier cyberpunk armor.\n\n"
+    "__VEO_GUIDE__\n"
+    "Shot structure — use EXACTLY 5 shots:\n"
+    "- Shot 1 (dramatic contrast intro): The creature's original tiny unarmored animal form standing in a vast neon cyberpunk megacity. "
+    "Describe it ONLY by color + animal type + signature physical feature — absolutely NO character name or franchise name. "
+    'duration=4, landmark_name=""\n'
+    "- Shot 2 (light armor): Evolution stage 1 wearing light cyberpunk armor — neon energy lines, minimal chrome plating, glowing LED eyes. "
+    "Describe creature visually by color+animal+feature — NO character name in prompt. "
+    "landmark_name=__EVO_1__ (2-3 words in __LANG__). duration=4\n"
+    "- Shot 3 (medium armor): Evolution stage 2 with medium battle armor — reinforced chest plate, energy gauntlets, plasma jets. "
+    "Describe creature visually — NO character name in prompt. "
+    "landmark_name=__EVO_2__ (2-3 words in __LANG__). duration=4\n"
+    "- Shot 4 (heavy armor): Evolution stage 3 in full heavy exosuit — plasma cannon, battle-scarred neon orange armor. "
+    "Describe creature visually — NO character name in prompt. "
+    "landmark_name=__EVO_3__ (2-3 words in __LANG__). duration=4\n"
+    "- Shot 5 (ultimate titan): A colossal city-scale cyberpunk mecha titan — reactor core blazing, plasma energy wings, "
+    "towering over the cyberpunk skyline. Describe as 'colossal [animal-type] mecha titan' — NO character name. "
+    "landmark_name=Ultimate Form (2-3 words in __LANG__). duration=4\n\n"
+    "Return ONLY a valid JSON object (no markdown, no explanation):\n"
+    '{\n'
+    '  "intro_phrase": "<punchy 6-8 word hook in __LANG__>",\n'
+    '  "visuals": [\n'
+    '    {"prompt": "<shot 1 — tiny [color] [animal] dwarfed by neon megacity — describe by color+animal+feature ONLY, no character name>", "duration": 4, "landmark_name": ""},\n'
+    '    {"prompt": "<shot 2 — [color] [animal] with light cyberpunk armor, neon energy lines — visual description only, no character name>", "duration": 4, "landmark_name": "<__EVO_1__ in __LANG__, 2-3 words>"},\n'
+    '    {"prompt": "<shot 3 — [color] [animal] in medium battle armor, energy gauntlets — visual description only, no character name>", "duration": 4, "landmark_name": "<__EVO_2__ in __LANG__, 2-3 words>"},\n'
+    '    {"prompt": "<shot 4 — [color] [animal] in heavy exosuit, plasma cannon — visual description only, no character name>", "duration": 4, "landmark_name": "<__EVO_3__ in __LANG__, 2-3 words>"},\n'
+    '    {"prompt": "<shot 5 — colossal [animal] mecha titan towering over city — no character name>", "duration": 4, "landmark_name": "<Ultimate Form in __LANG__, 2-3 words>"}\n'
+    '  ],\n'
+    '  "vibe": "<music genre — e.g. Cyberpunk Phonk, Synthwave Industrial, Neon Trap>"\n'
+    '}\n\n'
+    "Hard rules:\n"
+    "- CRITICAL: The creature name (__POKEMON__, __EVO_1__, __EVO_2__, __EVO_3__) and ANY franchise/brand name MUST NEVER appear inside any 'prompt' field — use visual descriptions only\n"
+    "- Exactly 5 shots: all duration=4\n"
+    "- Each shot MUST use a DIFFERENT camera move AND a DIFFERENT atmosphere — no repeats across all 5\n"
+    "- Every camera move MUST be fast and dynamic — NO slow or static shots\n"
+    "- Armor MUST visually escalate shot-by-shot: tiny unarmored → light → medium → heavy → colossal titan\n"
+    "- Each Veo prompt MUST open with: primary color + animal base + signature physical feature, THEN describe the armor\n"
+    "- Each prompt MUST include one environment detail (neon streets, forge, arena, battlefield, skyline)\n"
+    "- NO human faces, no text in scene, no watermarks\n"
+    "- landmark_name and intro_phrase in __LANG__"
+)
+
+
+def _fallback_pokemon(pokemon_name: str, evolution_chain: list[str]) -> dict:
+    chain = evolution_chain + [f"{evolution_chain[-1]} Battle"] * (3 - len(evolution_chain))
+    evo1, evo2, evo3 = chain[0], chain[min(1, len(chain) - 1)], chain[min(2, len(chain) - 1)]
+    # Prompts sent to Veo MUST NOT contain character names — describe creature visually only
+    return {
+        "intro_phrase": f"{pokemon_name} Cyberpunk Evolution — Ultimate Form!",
+        "visuals": [
+            {
+                "prompt": (
+                    "Fast sweeping crane shot pulling back, ultra-wide anamorphic 14mm, "
+                    "a tiny adorable creature in its original unarmored animal form "
+                    "standing alone on a neon rain-soaked cyberpunk street at midnight, "
+                    "surrounded by towering glass megacity skyscrapers, reflective wet asphalt glow, "
+                    "the small creature dwarfed by the vast neon city scale, "
+                    "cinematic, hyperrealistic, ultra-detailed, 8K, no faces, no text, no watermark"
+                ),
+                "duration": 4,
+                "landmark_name": "",
+            },
+            {
+                "prompt": (
+                    "Rapid low-angle cinematic push-in, wide-angle dramatic, "
+                    "a small cyberpunk creature in its first evolution form wearing light cyberpunk armor, "
+                    "neon energy lines tracing along its body, minimal chrome shoulder plate, glowing LED eyes, "
+                    "underground cyberpunk forge interior, molten sparks flying, deep orange light, "
+                    "cinematic, hyperrealistic, ultra-detailed, 8K, no faces, no text, no watermark"
+                ),
+                "duration": 4,
+                "landmark_name": evo1,
+            },
+            {
+                "prompt": (
+                    "Fast orbiting tracking shot circling 360°, 35mm cinematic, "
+                    "a mid-evolution cyberpunk creature in medium battle armor, "
+                    "reinforced neon-lit chest plate, energy-conduit gauntlets crackling with plasma, "
+                    "rooftop arena battle platform at night, drone spotlights, electric crowd energy, "
+                    "cinematic, hyperrealistic, ultra-detailed, 8K, no faces, no text, no watermark"
+                ),
+                "duration": 4,
+                "landmark_name": evo2,
+            },
+            {
+                "prompt": (
+                    "Dynamic high-speed lateral tracking shot, telephoto compression, "
+                    "a fully evolved cyberpunk creature in a full heavy exosuit, "
+                    "neon orange battle-scarred metal armor, integrated plasma cannon on shoulder, "
+                    "post-apocalyptic battlefield, smoldering neon ruins, crackling electric storm sky, "
+                    "cinematic, hyperrealistic, ultra-detailed, 8K, no faces, no text, no watermark"
+                ),
+                "duration": 4,
+                "landmark_name": f"{evo3} Battle Mode",
+            },
+            {
+                "prompt": (
+                    "Extreme low-angle looking up, fisheye upward tilt, "
+                    "a colossal cyberpunk mecha titan in its ultimate form, city-scale enormous armored body, "
+                    "reactor core blazing in chest, plasma energy wings spreading wide, "
+                    "towering over cyberpunk megacity skyline at blue-hour, holographic ads, neon bloom, "
+                    "cinematic, hyperrealistic, ultra-detailed, 8K, no faces, no text, no watermark"
+                ),
+                "duration": 4,
+                "landmark_name": "Ultimate Form",
+            },
+        ],
+        "vibe": "Cyberpunk Phonk",
+    }
+
+
 async def generate_timeline_brain(location: str, language: str = "en") -> dict:
     prompt_text = (
         _TIMELINE_BRAIN_PROMPT
@@ -649,4 +808,95 @@ async def generate_timeline_brain(location: str, language: str = "en") -> dict:
             return _fallback_timeline(location)
 
     raise RuntimeError("Timeline brain request loop exited unexpectedly")
+
+
+async def generate_pokemon_brain(
+    pokemon_name: str,
+    evolution_chain: list[str],
+    language: str = "en",
+) -> dict:
+    chain = evolution_chain + [f"{evolution_chain[-1]} Battle"] * max(0, 3 - len(evolution_chain))
+    evo1 = chain[0]
+    evo2 = chain[min(1, len(chain) - 1)]
+    evo3 = chain[min(2, len(chain) - 1)]
+
+    prompt_text = (
+        _POKEMON_BRAIN_PROMPT
+        .replace("__POKEMON__", pokemon_name)
+        .replace("__EVOLUTION_CHAIN__", ", ".join(evolution_chain))
+        .replace("__EVO_1__", evo1)
+        .replace("__EVO_2__", evo2)
+        .replace("__EVO_3__", evo3)
+        .replace("__LANG__", language)
+        .replace("__VEO_GUIDE__", _POKEMON_VEO_FORMULA)
+    )
+    logger.info(
+        "Pokémon brain: pokemon=%r, chain=%s, model=%s",
+        pokemon_name,
+        evolution_chain,
+        settings.gemini_model,
+    )
+
+    creds = sa.Credentials.from_service_account_file(
+        settings.vertex_ai_credentials_file,
+        scopes=["https://www.googleapis.com/auth/cloud-platform"],
+    )
+    creds.refresh(GoogleAuthRequest())
+    url = _VERTEX_URL_TPL.format(
+        host=_vertex_host(settings.gemini_location),
+        location=settings.gemini_location,
+        project=settings.gcp_project,
+        model=settings.gemini_model,
+    )
+    headers = {"Authorization": f"Bearer {creds.token}", "Content-Type": "application/json"}
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        last_error: Exception | None = None
+        best_raw_text = ""
+        use_schema = True
+        for attempt in range(1, 4):
+            attempt_prompt = prompt_text
+            if attempt > 1:
+                attempt_prompt += (
+                    "\n\nIMPORTANT: Return strict minified JSON only. "
+                    "Do not include markdown, comments, or trailing text."
+                )
+            try:
+                resp = await client.post(
+                    url,
+                    json=_build_payload(attempt_prompt, use_schema=use_schema),
+                    headers=headers,
+                )
+                resp.raise_for_status()
+            except httpx.HTTPStatusError as exc:
+                status = exc.response.status_code
+                if status == 400 and use_schema:
+                    logger.warning("Gemini rejected responseSchema (pokemon); retrying without schema")
+                    use_schema = False
+                    last_error = exc
+                    continue
+                raise
+
+            body = resp.json()
+            raw_text = _extract_raw_text(body)
+            if len(raw_text) > len(best_raw_text):
+                best_raw_text = raw_text
+
+            try:
+                return _parse_response(body)
+            except (JSONDecodeError, ValueError, KeyError, IndexError) as exc:
+                last_error = exc
+                logger.warning("Pokémon brain JSON parse failed (attempt %d/3): %s", attempt, exc)
+
+        if last_error is not None:
+            logger.error(
+                "Pokémon brain parse failed after retries, using fallback: %s | raw_text_preview=%r",
+                last_error,
+                best_raw_text[:500],
+            )
+            salvaged = _salvage_brain_from_text(best_raw_text, pokemon_name)
+            if salvaged and salvaged.get("visuals"):
+                return salvaged
+            return _fallback_pokemon(pokemon_name, evolution_chain)
+
+    raise RuntimeError("Pokémon brain request loop exited unexpectedly")
 

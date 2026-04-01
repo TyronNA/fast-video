@@ -11,11 +11,12 @@ import { renderSettings, loadSettings, applyTheme } from './settings.js';
 import { initBatch } from './batch.js';
 import { initWhatIf } from './whatif.js';
 import { initTimeline } from './timeline.js';
+import { initPokemon } from './pokemon.js';
 import { initDashboard, loadDashboard } from './dashboard.js';
 
 // ── Navigation ─────────────────────────────────────────────────────────────
 
-const VIEWS = ['generate', 'history', 'settings', 'batch', 'whatif', 'timeline', 'dashboard'];
+const VIEWS = ['generate', 'history', 'settings', 'batch', 'whatif', 'timeline', 'pokemon', 'dashboard'];
 
 function switchView(target) {
   VIEWS.forEach(v => {
@@ -35,9 +36,10 @@ function switchView(target) {
   // Toggle right-panel between preview, batch queue, whatif, timeline, and dashboard
   const isWhatIf    = target === 'whatif';
   const isTimeline  = target === 'timeline';
+  const isPokemon   = target === 'pokemon';
   const isBatch     = target === 'batch';
   const isDashboard = target === 'dashboard';
-  const isNormal    = !isBatch && !isWhatIf && !isTimeline && !isDashboard;
+  const isNormal    = !isBatch && !isWhatIf && !isTimeline && !isPokemon && !isDashboard;
   document.getElementById('normalPreviewPanel')?.classList.toggle('hidden', !isNormal);
   document.getElementById('normalPreviewPanel')?.classList.toggle('flex', isNormal);
   document.getElementById('batchQueuePanel')?.classList.toggle('hidden', !isBatch);
@@ -46,6 +48,8 @@ function switchView(target) {
   document.getElementById('whatifPanel')?.classList.toggle('flex', isWhatIf);
   document.getElementById('timelinePanel')?.classList.toggle('hidden', !isTimeline);
   document.getElementById('timelinePanel')?.classList.toggle('flex', isTimeline);
+  document.getElementById('pokemonPanel')?.classList.toggle('hidden', !isPokemon);
+  document.getElementById('pokemonPanel')?.classList.toggle('flex', isPokemon);
   document.getElementById('dashboardPanel')?.classList.toggle('hidden', !isDashboard);
   document.getElementById('dashboardPanel')?.classList.toggle('flex', isDashboard);
 
@@ -128,6 +132,7 @@ async function boot() {
     initBatch(models);
     initWhatIf(models);
     initTimeline(models);
+    initPokemon(models);
     initDashboard();
   } catch (err) {
     badge.innerHTML =
@@ -152,6 +157,11 @@ async function boot() {
   // Timeline log clear button
   document.getElementById('tlLogClear')?.addEventListener('click', () => {
     document.getElementById('tlLogBody').innerHTML = '';
+  });
+
+  // Pokémon log clear button
+  document.getElementById('pkLogClear')?.addEventListener('click', () => {
+    document.getElementById('pkLogBody').innerHTML = '';
   });
 
   // Aspect ratio changes update draft box live
