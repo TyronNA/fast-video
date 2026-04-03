@@ -118,6 +118,11 @@ async def run_pipeline(job_id: str) -> None:
         export_path = export_dir / f"whatif_{job_id}.mp4"
         Path(final).rename(export_path)
 
+        srt_src = work_dir / "captions.srt"
+        if srt_src.exists():
+            shutil.copy2(srt_src, export_dir / f"whatif_{job_id}.srt")
+            logger.info("[%s] SRT copied → exports/whatif_%s.srt", job_id, job_id)
+
         probe = subprocess.run(
             ["ffprobe", "-v", "error",
              "-show_entries", "format=duration",

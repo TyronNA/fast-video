@@ -51,7 +51,12 @@ async def run(job: WhatIfJob, work_dir: Path) -> list[str]:
 
     texts: list[str] = []
     for i, v in enumerate(brain.visuals):
-        texts.append(brain.intro_phrase if i == 0 else _short_landmark(v.landmark_name or ""))
+        if i == 0:
+            texts.append(brain.intro_phrase)
+        elif v.tts_script:
+            texts.append(v.tts_script)
+        else:
+            texts.append(_short_landmark(v.landmark_name or ""))
 
     async def _tts_clip(i: int, text: str) -> str:
         if not text.strip():

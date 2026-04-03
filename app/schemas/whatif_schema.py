@@ -16,10 +16,12 @@ class VisualConfig(BaseModel):
     prompt: str
     duration: int = 4
     landmark_name: Optional[str] = None  # clip 0 = None (overview), clips 1-N = landmark name for TTS
+    tts_script: Optional[str] = None     # timeline only: short narration line (≤10 words) for this era
 
 
 class BrainOutput(BaseModel):
     intro_phrase: str                    # short 6-8 word overview phrase for clip 0 TTS
+    hook_text: Optional[str] = None      # 3-5 word bold overlay text for CapCut title card (e.g. "HÀ NỘI 3000")
     script: Optional[str] = None        # unused (kept for schema compat)
     voice_model: str = "en-US-Neural2-J"
     visuals: list[VisualConfig]

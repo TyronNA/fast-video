@@ -238,18 +238,23 @@ function _showEras(brain) {
   if (vibe) vibe.textContent = brain.vibe || '';
   if (list) {
     list.innerHTML = '';
-    const eras = (brain.visuals || []).map((v, i) =>
-      i === 0 ? (brain.intro_phrase || '') : (v.landmark_name || '')
-    ).filter(Boolean);
+    (brain.visuals || []).forEach((v, i) => {
+      const mainText = i === 0
+        ? (brain.intro_phrase || '')
+        : (v.tts_script || v.landmark_name || '');
+      const dateLabel = i > 0 ? (v.landmark_name || '') : '';
+      if (!mainText) return;
 
-    eras.forEach((text, i) => {
       const label = i === 0 ? 'Hook' : `Era ${i}`;
       const row = document.createElement('div');
       row.className = 'flex items-start gap-2 group';
+      const dateBadge = dateLabel
+        ? `<span class="text-[9px] font-mono text-amber-600/60 block leading-none mb-0.5">${dateLabel}</span>`
+        : '';
       row.innerHTML = `
         <span class="shrink-0 text-[10px] font-mono text-amber-500/70 w-10 pt-0.5">${label}</span>
-        <span class="flex-1 text-xs text-gray-200 leading-snug">${text}</span>
-        <button class="shrink-0 opacity-0 group-hover:opacity-100 transition text-gray-500 hover:text-amber-300" title="Copy" onclick="navigator.clipboard.writeText(${JSON.stringify(text)})">
+        <span class="flex-1 text-xs text-gray-200 leading-snug">${dateBadge}${mainText}</span>
+        <button class="shrink-0 opacity-0 group-hover:opacity-100 transition text-gray-500 hover:text-amber-300" title="Copy" onclick="navigator.clipboard.writeText(${JSON.stringify(mainText)})">
           <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
           </svg>

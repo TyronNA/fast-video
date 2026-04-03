@@ -20,9 +20,10 @@ _SUPPORTED_DURATIONS = (4, 6, 8)
 
 _BRAIN_RESPONSE_SCHEMA = {
     "type": "OBJECT",
-    "required": ["intro_phrase", "visuals", "vibe"],
+    "required": ["intro_phrase", "hook_text", "visuals", "vibe"],
     "properties": {
         "intro_phrase": {"type": "STRING"},
+        "hook_text": {"type": "STRING"},
         "visuals": {
             "type": "ARRAY",
             "minItems": 4,
@@ -44,20 +45,22 @@ _BRAIN_RESPONSE_SCHEMA = {
 
 _TIMELINE_BRAIN_RESPONSE_SCHEMA = {
     "type": "OBJECT",
-    "required": ["intro_phrase", "visuals", "vibe"],
+    "required": ["intro_phrase", "hook_text", "visuals", "vibe"],
     "properties": {
         "intro_phrase": {"type": "STRING"},
+        "hook_text": {"type": "STRING"},
         "visuals": {
             "type": "ARRAY",
             "minItems": 5,
             "maxItems": 5,
             "items": {
                 "type": "OBJECT",
-                "required": ["prompt", "duration", "landmark_name"],
+                "required": ["prompt", "duration", "landmark_name", "tts_script"],
                 "properties": {
                     "prompt": {"type": "STRING"},
                     "duration": {"type": "INTEGER", "enum": [4, 6, 8]},
                     "landmark_name": {"type": "STRING"},
+                    "tts_script": {"type": "STRING"},
                 },
             },
         },
@@ -108,26 +111,37 @@ _TIMELINE_BRAIN_PROMPT = (
     "each era must be separated by AT LEAST 300 years from the previous one, so viewers see dramatic visual transformation between every clip.\n\n"
     "__VEO_GUIDE__\n"
     "Shot structure — use EXACTLY these 5 era slots in chronological order:\n"
-    "- Shot 1 (opening hook): __LOCATION__ TODAY (present day) — fast sweeping wide aerial overhead shot. duration=4, landmark_name=\"\"\n"
+    "- Shot 1 (opening hook): __LOCATION__ TODAY (present day) — fast sweeping wide aerial overhead shot. duration=4, landmark_name=\"\", tts_script=\"\"\n"
     "- Shot 2 (deep ancient): __LOCATION__ in its EARLIEST historical era — pick the most ancient period relevant to this location (e.g. 3000 BC, 500 BC, 100 AD — choose one specific year). "
-    "Show raw ancient architecture: stone, mud-brick, primitive settlements, open wilderness. landmark_name = specific year in __LANG__ (e.g. '500 TCN', '100 AD'). duration=4\n"
+    "Show raw ancient architecture: stone, mud-brick, primitive settlements, open wilderness. landmark_name = specific year in __LANG__ (e.g. '500 TCN', '100 AD'). duration=4. "
+    "tts_script = 1 punchy myth-busting sentence about this era in __LANG__, MAX 10 WORDS.\n"
     "- Shot 3 (medieval/classical): __LOCATION__ roughly 300–600 years AFTER shot 2 — pick the medieval, classical, or early imperial era of this specific location. "
-    "Architecture transitions: wooden towers, walled fortifications, early market squares. landmark_name = specific century in __LANG__ (e.g. 'Thế kỷ 8', 'Century 12'). duration=4\n"
+    "Architecture transitions: wooden towers, walled fortifications, early market squares. landmark_name = specific century in __LANG__ (e.g. 'Thế kỷ 8', 'Century 12'). duration=4. "
+    "tts_script = 1 punchy myth-busting sentence about this era in __LANG__, MAX 10 WORDS.\n"
     "- Shot 4 (industrial/modern): __LOCATION__ roughly 300–600 years AFTER shot 3 — pick the colonial, industrial, or 20th-century modern era. "
-    "Architecture: iron and brick buildings, tram roads, early urban grid, or mid-century concrete. This era must be between 1800 AD and 1990 AD. landmark_name = specific decade in __LANG__ (e.g. '1920s', 'Thập niên 1960'). duration=4\n"
+    "Architecture: iron and brick buildings, tram roads, early urban grid, or mid-century concrete. This era must be between 1800 AD and 1990 AD. landmark_name = specific decade in __LANG__ (e.g. '1920s', 'Thập niên 1960'). duration=4. "
+    "tts_script = 1 punchy myth-busting sentence about this era in __LANG__, MAX 10 WORDS.\n"
     "- Shot 5 (far future): __LOCATION__ at least 500 years FROM NOW — minimum year 2500 AD. "
-    "Architecture: mega-towers, floating platforms, holographic structures, plasma conduits. landmark_name = specific far future year in __LANG__ (e.g. 'Năm 2500', 'Year 2800'). duration=4\n\n"
+    "Architecture: mega-towers, floating platforms, holographic structures, plasma conduits. landmark_name = specific far future year in __LANG__ (e.g. 'Năm 2500', 'Year 2800'). duration=4. "
+    "tts_script = 1 punchy provocative sentence about this future in __LANG__, MAX 10 WORDS.\n\n"
     "CRITICAL ERA SPACING RULE: Calculate the year gaps between shots 2→3→4→5. Each gap MUST be at least 300 years. "
     "If a gap is under 300 years, pick a different year. Write the chosen years in the landmark_name so they are clearly visible.\n\n"
+    "tts_script rules:\n"
+    "- Shot 1: always empty string \"\"\n"
+    "- Shots 2-5: STRICTLY max 10 words — must fit spoken in 4 seconds\n"
+    "- Style: punchy myth-bust or provocative hook — no full sentences starting with 'The' or 'In'\n"
+    "- Example (Vietnamese): 'Người xưa không hề ngu — họ chỉ khác ta' (9 words)\n"
+    "- Example (English): 'They built this without a single nail' (7 words)\n\n"
     "Return ONLY a valid JSON object (no markdown, no explanation):\n"
     '{\n'
-    '  "intro_phrase": "<punchy 7-9 word hook in __LANG__, e.g. \'Rome — 2500 năm trong 20 giây\'>",\n'
+    '  "intro_phrase": "<scroll-stopping hook in __LANG__, 7-10 words — must create disbelief or strong curiosity — e.g. \'Rome — 2500 năm lịch sử mà bạn chưa thấy\', \'This is what Rome really looked like\', \'Không ai nói cho bạn sự thật về Rome\'>",\n'
+    '  "hook_text": "<3-5 word bold title in __LANG__ for opening text overlay — ALL CAPS style — e.g. \'ROME QUA 2500 NĂM\', \'ROME THROUGH 2500 YEARS\', \'HÀ NỘI QUA CÁC THỜI ĐẠI\'>",\n'
     '  "visuals": [\n'
-    '    {"prompt": "<shot 1 — fast sweeping wide aerial reveal of __LOCATION__ today>", "duration": 4, "landmark_name": ""},\n'
-    '    {"prompt": "<shot 2 — __LOCATION__ in deep ancient era, exact year chosen>", "duration": 4, "landmark_name": "<specific year in __LANG__>"},\n'
-    '    {"prompt": "<shot 3 — __LOCATION__ in medieval/classical era, at least 300 years after shot 2>", "duration": 4, "landmark_name": "<specific century in __LANG__>"},\n'
-    '    {"prompt": "<shot 4 — __LOCATION__ in industrial or modern era, between 1800-1990 AD, at least 300 years after shot 3>", "duration": 4, "landmark_name": "<specific decade in __LANG__>"},\n'
-    '    {"prompt": "<shot 5 — __LOCATION__ in far future, minimum year 2500>", "duration": 4, "landmark_name": "<far future year in __LANG__>"}\n'
+    '    {"prompt": "<shot 1 — fast sweeping wide aerial reveal of __LOCATION__ today>", "duration": 4, "landmark_name": "", "tts_script": ""},\n'
+    '    {"prompt": "<shot 2 — __LOCATION__ in deep ancient era, exact year chosen>", "duration": 4, "landmark_name": "<specific year in __LANG__>", "tts_script": "<max 10-word myth-bust in __LANG__>"},\n'
+    '    {"prompt": "<shot 3 — __LOCATION__ in medieval/classical era, at least 300 years after shot 2>", "duration": 4, "landmark_name": "<specific century in __LANG__>", "tts_script": "<max 10-word myth-bust in __LANG__>"},\n'
+    '    {"prompt": "<shot 4 — __LOCATION__ in industrial or modern era, between 1800-1990 AD, at least 300 years after shot 3>", "duration": 4, "landmark_name": "<specific decade in __LANG__>", "tts_script": "<max 10-word myth-bust in __LANG__>"},\n'
+    '    {"prompt": "<shot 5 — __LOCATION__ in far future, minimum year 2500>", "duration": 4, "landmark_name": "<far future year in __LANG__>", "tts_script": "<max 10-word provocative hook in __LANG__>"}\n'
     '  ],\n'
     '  "vibe": "<music genre fitting this historical journey — e.g. Orchestral Epic, Cinematic Score, Taiko Drums>"\n'
     '}\n\n'
@@ -140,14 +154,16 @@ _TIMELINE_BRAIN_PROMPT = (
     "- MINIMUM 300-year gap between shots 2, 3, and 4 — absolutely no two adjacent historical shots within the same century\n"
     "- Shot 4 must be between 1800 and 1990 AD; shot 5 must be 2500 AD or later\n"
     "- landmark_name for shots 2-5 = specific year/decade/century in __LANG__ — NO vague labels like 'Ancient Era' or 'Medieval'\n"
+    "- tts_script for shots 2-5 = MAX 10 WORDS, same language as __LANG__\n"
     "- NO people, no faces, no text in scene, no watermarks\n"
-    "- intro_phrase and landmark_name values in __LANG__"
+    "- intro_phrase, hook_text, landmark_name, and tts_script values in __LANG__"
 )
 
 
 def _fallback_timeline(location: str) -> dict:
     return {
-        "intro_phrase": f"{location} — from ancient to future",
+        "intro_phrase": f"Nobody told you the truth about {location}",
+        "hook_text": f"{location.upper()} THROUGH TIME",
         "visuals": [
             {
                 "prompt": (
@@ -157,6 +173,7 @@ def _fallback_timeline(location: str) -> dict:
                 ),
                 "duration": 4,
                 "landmark_name": "",
+                "tts_script": "",
             },
             {
                 "prompt": (
@@ -166,7 +183,8 @@ def _fallback_timeline(location: str) -> dict:
                     "cinematic, hyperrealistic, ultra-detailed, 8K, no text, no watermark"
                 ),
                 "duration": 4,
-            "landmark_name": "500 BC",
+                "landmark_name": "500 BC",
+                "tts_script": "They built empires without a single machine.",
             },
             {
                 "prompt": (
@@ -176,7 +194,8 @@ def _fallback_timeline(location: str) -> dict:
                     "cinematic, hyperrealistic, ultra-detailed, 8K, no text, no watermark"
                 ),
                 "duration": 4,
-            "landmark_name": "1200s",
+                "landmark_name": "1200s",
+                "tts_script": "Dark Ages? They had running water before us.",
             },
             {
                 "prompt": (
@@ -187,6 +206,7 @@ def _fallback_timeline(location: str) -> dict:
                 ),
                 "duration": 4,
                 "landmark_name": "1920s",
+                "tts_script": "This smoke didn't kill progress — it created it.",
             },
             {
                 "prompt": (
@@ -198,6 +218,7 @@ def _fallback_timeline(location: str) -> dict:
                 ),
                 "duration": 4,
                 "landmark_name": "Year 2500",
+                "tts_script": "The future won't look like this. Think bigger.",
             },
         ],
         "vibe": "Orchestral Epic",
@@ -285,7 +306,8 @@ _BRAIN_PROMPT = (
     "- Shots 2-5: Pick 4 of the most ICONIC and RECOGNIZABLE real-world landmarks/areas of __TOPIC__ and reimagine each one. Must be places that actually exist and are famous — specific to THIS city, not generic labels. Each prompt MUST start by describing the real-world visual signature of that landmark (its shape, structure, or what makes it recognizable), then transform it into a futuristic version with specific sci-fi tech (plasma conduits, anti-gravity platforms, bioluminescent crystal, neural interface towers, etc.). Each clip must look VISUALLY DIFFERENT from every other clip. duration=4 each.\n\n"
     "Return ONLY a valid JSON object (no markdown, no explanation):\n"
     '{\n'
-    '  "intro_phrase": "<punchy 6-8 word question in __LANG__, e.g. What would Tokyo look like in 3000?>",\n'
+    '  "intro_phrase": "<scroll-stopping curiosity hook in __LANG__, 7-10 words — must make viewer FREEZE mid-scroll — use a provocative question or disbelief statement — e.g. \'Không ai nói cho bạn điều này về Hà Nội\', \'What if Tokyo became this in year 3000?\', \'Đây là tương lai Sài Gòn mà bạn chưa thấy\', \'Nobody prepared you for what Rome becomes\'>",\n'
+    '  "hook_text": "<3-5 word bold title in __LANG__ for opening text overlay — ALL CAPS style — e.g. \'HÀ NỘI 3000\', \'TOKYO IN 3000\', \'ROME 3000 AD\', \'SÀI GÒN NĂM 3000\'>",\n'
     '  "visuals": [\n'
     '    {"prompt": "<shot 1 — awe-inspiring fast sweeping wide aerial hero shot>", "duration": 4, "landmark_name": ""},\n'
     '    {"prompt": "<shot 2 — iconic landmark of __TOPIC__ reimagined with specific sci-fi transformation>", "duration": 4, "landmark_name": "<real area name in __LANG__, 2-4 words>"},\n'
@@ -304,7 +326,7 @@ _BRAIN_PROMPT = (
     "- landmark_name for shots 2-5 MUST be real, recognizable place names that exist in __TOPIC__ — NOT generic labels like 'City Center', 'Old Quarter', 'Central District', 'Business District', 'Waterfront', 'Transit Hub'; MAX 4 words\n"
     "- Prefer bridges, beaches, hills, specific roads, monuments, stadiums over vague districts\n"
     "- NO faces, no text in scene, no watermarks\n"
-    "- intro_phrase and landmark_name values in __LANG__"
+    "- intro_phrase, hook_text, and landmark_name values in __LANG__"
 )
 
 _FICTIONAL_BRAIN_PROMPT = (
@@ -322,7 +344,8 @@ _FICTIONAL_BRAIN_PROMPT = (
     "- Shots 2-5: Pick 4 of the most ICONIC zones, structures, or features of __TOPIC__ from its mythology or cultural lore and render each one. Each prompt MUST start by describing the canonical visual signature of that area (its mythological iconography — what makes it recognizable from stories/art), then visualize it as a stunning photorealistic scene. Each clip must look VISUALLY DIFFERENT. duration=4 each.\n\n"
     "Return ONLY a valid JSON object (no markdown, no explanation):\n"
     '{\n'
-    '  "intro_phrase": "<punchy 6-8 word question or statement in __LANG__, e.g. What does Heaven really look like?>",\n'
+    '  "intro_phrase": "<scroll-stopping curiosity hook in __LANG__, 7-10 words — must shock or create disbelief — e.g. \'Thiên Đình trông như thế này thì ai ngờ được\', \'Nobody actually knows what Heaven looks like\', \'Địa Phủ đẹp hơn bạn tưởng rất nhiều\'>",\n'
+    '  "hook_text": "<3-5 word bold title in __LANG__ for opening text overlay — ALL CAPS style — e.g. \'THIÊN ĐÌNH THẬT SỰ\', \'WHAT IS HEAVEN\', \'ĐỊA PHỦ THẬT SỰ\'>",\n'
     '  "visuals": [\n'
     '    {"prompt": "<shot 1 — awe-inspiring fast sweeping wide hero shot of the entire realm>", "duration": 4, "landmark_name": ""},\n'
     '    {"prompt": "<shot 2 — iconic zone/structure of __TOPIC__ rendered photorealistically>", "duration": 4, "landmark_name": "<area name from mythology in __LANG__, 2-4 words>"},\n'
@@ -340,7 +363,7 @@ _FICTIONAL_BRAIN_PROMPT = (
     "- Each prompt MUST include one depth layer element (foreground parallax)\n"
     "- landmark_name for shots 2-5 must be iconic named zones from this realm's mythology — NOT generic labels like 'Area 1', 'Zone A'; MAX 4 words\n"
     "- NO faces, no text in scene, no watermarks\n"
-    "- intro_phrase and landmark_name values in __LANG__"
+    "- intro_phrase, hook_text, and landmark_name values in __LANG__"
 )
 
 
@@ -396,7 +419,8 @@ def _cleanup_json_string(value: str) -> str:
 
 def _fallback_brain(topic: str) -> dict:
     return {
-        "intro_phrase": f"What would {topic} look like in the future?",
+        "intro_phrase": f"Nobody prepared you for what {topic} becomes",
+        "hook_text": f"{topic.upper()} IN 3000",
         "visuals": [
             {
                 "prompt": (
@@ -454,6 +478,7 @@ def _salvage_brain_from_text(raw_text: str, topic: str) -> dict:
         return _fallback_brain(topic)
 
     intro_match = re.search(r'"intro_phrase"\s*:\s*"([\s\S]*?)"\s*(?:,|})', text)
+    hook_match = re.search(r'"hook_text"\s*:\s*"([\s\S]*?)"\s*(?:,|})', text)
     prompts = re.findall(r'"prompt"\s*:\s*"([\s\S]*?)"\s*(?:,|})', text)
     durations = re.findall(r'"duration"\s*:\s*(\d+)', text)
     landmarks = re.findall(r'"landmark_name"\s*:\s*"([\s\S]*?)"\s*(?:,|})', text)
@@ -463,6 +488,8 @@ def _salvage_brain_from_text(raw_text: str, topic: str) -> dict:
 
     if intro_match:
         result["intro_phrase"] = _cleanup_json_string(intro_match.group(1))
+    if hook_match:
+        result["hook_text"] = _cleanup_json_string(hook_match.group(1))
     if vibe_match:
         result["vibe"] = _cleanup_json_string(vibe_match.group(1))
 
